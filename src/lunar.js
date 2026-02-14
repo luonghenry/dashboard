@@ -81,7 +81,7 @@ function getSunLongitude(jdn, timeZone) {
     return Math.floor(L / Math.PI * 6);
 }
 
-function convertSolar2Lunar(dd, mm, yy, timeZone) {
+export function convertSolar2Lunar(dd, mm, yy, timeZone) {
     var k, dayNumber, monthStart, a11, b11, lunarDay, lunarMonth, 
         lunarYear, lunarLeap;
     dayNumber = jdFromDate(dd, mm, yy);
@@ -147,7 +147,7 @@ var CAN = ["Giáp", "Ất", "Bính", "Đinh", "Mậu", "Kỷ", "Canh",
 var CHI = ["Tý", "Sửu", "Dần", "Mão", "Thìn", "Tỵ", "Ngọ", 
            "Mùi", "Thân", "Dậu", "Tuất", "Hợi"];
 
-function getCanChi(lunar) {
+export function getCanChi(lunar) {
     var yearCan = CAN[(lunar.year + 6) % 10];
     var yearChi = CHI[(lunar.year + 8) % 12];
     return yearCan + " " + yearChi;
