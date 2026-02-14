@@ -2,78 +2,208 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lịch Âm Việt Nam</title>
+    <meta name="viewport" content="width=1072">
+    <title>Kindle Dashboard - Lịch Việt & Thời Tiết</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 1000px;
-            margin: 40px auto;
-            padding: 20px;
-            background: #f5f5f5;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            border-radius: 10px;
-            text-align: center;
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: white;
+            color: black;
+            padding: 20px;
+            font-size: 18px;
+            line-height: 1.4;
+        }
+        
+        /* Kindle Paperwhite optimization */
+        .container {
+            max-width: 1032px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            border-bottom: 3px solid black;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            font-size: 22px;
+            margin: 20px 0 10px 0;
+            border-bottom: 2px solid black;
+            padding-bottom: 5px;
+        }
+        
+        .datetime-section {
             margin-bottom: 30px;
         }
-        table {
-            width: 100%;
-            background: white;
-            border-collapse: collapse;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-radius: 8px;
-            overflow: hidden;
+        
+        .solar-date {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
         }
-        th {
-            background: #667eea;
-            color: white;
-            padding: 15px;
-            text-align: left;
+        
+        .lunar-date {
+            font-size: 20px;
+            margin-bottom: 5px;
         }
-        td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #eee;
+        
+        .weather-section {
+            margin-bottom: 30px;
         }
-        tr:hover {
-            background: #f9f9f9;
+        
+        .weather-current {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 15px 0;
         }
-        .footer {
+        
+        .weather-details {
+            font-size: 18px;
+            line-height: 1.8;
+        }
+        
+        .forecast-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .forecast-item {
+            border: 2px solid black;
+            padding: 10px;
+            flex: 1;
+            min-width: 150px;
             text-align: center;
-            margin-top: 20px;
+        }
+        
+        .reminder-section textarea {
+            width: 100%;
+            min-height: 150px;
+            font-size: 16px;
+            padding: 10px;
+            border: 2px solid black;
+            background: white;
+            font-family: Arial, sans-serif;
+        }
+        
+        .last-update {
+            margin-top: 30px;
+            font-size: 14px;
             color: #666;
-            font-size: 0.9em;
+            text-align: center;
+        }
+        
+        /* Night mode */
+        body.night-mode {
+            background: black;
+            color: white;
+        }
+        
+        body.night-mode h1,
+        body.night-mode h2,
+        body.night-mode .forecast-item {
+            border-color: white;
+        }
+        
+        body.night-mode textarea {
+            background: black;
+            color: white;
+            border-color: white;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>📅 Lịch Âm Việt Nam</h1>
-        <p>Hôm nay: <strong>{{TODAY_SOLAR}}</strong></p>
-        <p>Âm lịch: <strong>{{TODAY_LUNAR}}</strong> ({{YEAR_CANCHI}})</p>
+    <div class="container">
+        <h1>📅 Dashboard Kindle</h1>
+        
+        <div class="datetime-section">
+            <h2>Ngày Hôm Nay</h2>
+            <div class="solar-date" id="solarDate">{{SOLAR_DATE}}</div>
+            <div class="lunar-date" id="lunarDate">{{LUNAR_DATE}}</div>
+            <div class="lunar-date" id="canChi">{{CAN_CHI}}</div>
+        </div>
+        
+        <div class="weather-section">
+            <h2>Thời Tiết - <span id="cityName">{{CITY_NAME}}</span></h2>
+            <div class="weather-current" id="currentTemp">{{CURRENT_TEMP}}</div>
+            <div class="weather-details">
+                <div id="weatherDesc">{{WEATHER_DESC}}</div>
+                <div>Độ ẩm: <span id="humidity">{{HUMIDITY}}</span>%</div>
+                <div>Mặt trời mọc: <span id="sunrise">{{SUNRISE}}</span></div>
+                <div>Mặt trời lặn: <span id="sunset">{{SUNSET}}</span></div>
+            </div>
+            
+            <h3 style="font-size: 18px; margin-top: 20px;">
+                Dự Báo 12 Giờ Tới
+            </h3>
+            <div class="forecast-container" id="forecastContainer">
+                {{FORECAST_ITEMS}}
+            </div>
+        </div>
+        
+        <div class="reminder-section">
+            <h2>Ghi Chú / Reminder</h2>
+            <textarea id="reminderText" 
+                      placeholder="Ghi chú công việc cần làm...">
+            </textarea>
+        </div>
+        
+        <div class="last-update">
+            Cập nhật lần cuối: <span id="lastUpdate">{{LAST_UPDATE}}</span>
+        </div>
     </div>
+    
+    <script>
+        const CONFIG = {
+            nightModeAuto: true,
+            nightModeStart: 22,  // 10 PM
+            nightModeEnd: 6      // 6 AM
+        };
 
-    <table>
-        <thead>
-            <tr>
-                <th>Dương lịch</th>
-                <th>Âm lịch</th>
-                <th>Can Chi</th>
-                <th>Sự kiện</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{TABLE_ROWS}}
-        </tbody>
-    </table>
+        // Save/load reminder from localStorage
+        function loadReminder() {
+            const saved = localStorage.getItem('kindleReminder');
+            if (saved) {
+                document.getElementById('reminderText').value = saved;
+            }
+        }
+        
+        function saveReminder() {
+            const text = document.getElementById('reminderText').value;
+            localStorage.setItem('kindleReminder', text);
+        }
+        
+        // Night mode
+        function checkNightMode() {
+            if (!CONFIG.nightModeAuto) return;
+            
+            const hour = new Date().getHours();
+            if (hour >= CONFIG.nightModeStart || 
+                hour < CONFIG.nightModeEnd) {
+                document.body.classList.add('night-mode');
+            } else {
+                document.body.classList.remove('night-mode');
+            }
+        }
 
-    <div class="footer">
-        <p>Cập nhật lúc: {{BUILD_TIME}}</p>
-        <p>{{CREDITS}}</p>
-        <p>Được tạo tự động bởi GitHub Actions</p>
-    </div>
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadReminder();
+            checkNightMode();
+            
+            // Auto-save reminder on change
+            document.getElementById('reminderText')
+                .addEventListener('input', saveReminder);
+        });
+    </script>
 </body>
 </html>
