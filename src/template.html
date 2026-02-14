@@ -150,11 +150,11 @@
             </div>
         </div>
         
-        <div class="reminder-section">
-            <h2>Ghi Chú / Reminder</h2>
-            <textarea id="reminderText" 
-                      placeholder="Ghi chú công việc cần làm...">
-            </textarea>
+        <div class="quote-section">
+            <h2>Châm Ngôn Thành Công</h2>
+            <div id="quote" style="font-size: 1.1em; font-style: italic; text-align: center; padding: 20px 0;">
+                {{QUOTE_OF_THE_DAY}}
+            </div>
         </div>
         
         <div class="last-update">
@@ -168,19 +168,6 @@
             nightModeStart: 22,  // 10 PM
             nightModeEnd: 6      // 6 AM
         };
-
-        // Save/load reminder from localStorage
-        function loadReminder() {
-            const saved = localStorage.getItem('kindleReminder');
-            if (saved) {
-                document.getElementById('reminderText').value = saved;
-            }
-        }
-        
-        function saveReminder() {
-            const text = document.getElementById('reminderText').value;
-            localStorage.setItem('kindleReminder', text);
-        }
         
         // Night mode
         function checkNightMode() {
@@ -197,12 +184,7 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            loadReminder();
             checkNightMode();
-            
-            // Auto-save reminder on change
-            document.getElementById('reminderText')
-                .addEventListener('input', saveReminder);
         });
     </script>
 </body>
