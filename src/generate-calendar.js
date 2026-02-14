@@ -1,4 +1,4 @@
-import { getLunarDate } from 'dashboard';
+import { getLunarDate } from './lunar-calendar.js';
 import fs from 'fs';
 import path from 'path';
 
