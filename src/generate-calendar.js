@@ -1,4 +1,4 @@
-import { getLunarDate } from 'vietnamese-lunar-calendar';
+import { getLunarDate } from 'dashboard';
 import fs from 'fs';
 import path from 'path';
 
