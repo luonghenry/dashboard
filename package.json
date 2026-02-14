@@ -1,0 +1,11 @@
+{
+  "name": "lunar-calendar-site",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "node src/generate-calendar.js"
+  },
+  "dependencies": {
+    "vietnamese-lunar-calendar": "^1.0.0"
+  }
+}
