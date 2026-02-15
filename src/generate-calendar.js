@@ -4,11 +4,10 @@ import https from 'https';
 
 // --- CONFIG ---
 const CONFIG = {
-    weatherApiKey: process.env.OPENWEATHER_API_KEY || 'YOUR_API_KEY_HERE',
     lat: 35.6895, // Tokyo
     lon: 139.6917, // Tokyo
     units: 'metric',
-    lang: 'ja',
+    lang: 'vi',
     timezone: 9, // JST
 };
 
@@ -49,62 +48,93 @@ async function generateDashboard() {
         console.log('🚀 Starting dashboard generation...');
 
         // 1. Get Date and Lunar Info
-        const now = new Date();
-        const todaySolar = new Intl.DateTimeFormat('ja-JP', { 
+        let now;
+        try {
+            console.log('🕒 Fetching current time from API...');
+            const timeUrl = 'https://timeapi.io/api/Time/current/zone?timeZone=Asia/Tokyo';
+            const timeData = await fetchData(timeUrl);
+            now = new Date(timeData.dateTime);
+            console.log('🕒 Time successfully fetched from API.');
+        } catch (timeError) {
+            console.warn('⚠️ Could not fetch time from API. Falling back to local system time.', timeError.message);
+            now = new Date();
+        }
+        const todaySolar = new Intl.DateTimeFormat('vi-VN', { 
             dateStyle: 'full', 
             timeStyle: 'short', 
             timeZone: 'Asia/Tokyo' 
         }).format(now);
         
         const lunar = convertSolar2Lunar(now.getDate(), now.getMonth() + 1, now.getFullYear(), CONFIG.timezone);
-        const lunarDateStr = `旧暦: ${lunar.day}/${lunar.month}${lunar.isLeapMonth ? ' (閏)' : ''}`;
-        const canChiStr = `年: ${getCanChi(lunar)}`;
+        const lunarDateStr = `Âm lịch: ${lunar.day}/${lunar.month}${lunar.isLeapMonth ? ' (Nhuận)' : ''}`;
+        const canChiStr = `Năm: ${getCanChi(lunar)}`;
 
-        // 2. Fetch Weather Data
-        console.log('🌦️ Fetching weather data for Tokyo...');
-        const currentUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${CONFIG.lat}&lon=${CONFIG.lon}&appid=${CONFIG.weatherApiKey}&units=${CONFIG.units}&lang=${CONFIG.lang}`;
-        const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${CONFIG.lat}&lon=${CONFIG.lon}&appid=${CONFIG.weatherApiKey}&units=${CONFIG.units}&lang=${CONFIG.lang}`;
-
-        let weatherData, forecastData;
+        // 2. Fetch Weather Data from Free API
+        console.log('🌦️ Fetching weather data from free API...');
+        const weatherUrl = `https://wttr.in/Tokyo?format=j1&lang=vi`;
+        
+        let weatherData;
         try {
-            [weatherData, forecastData] = await Promise.all([
-                fetchData(currentUrl),
-                fetchData(forecastUrl)
-            ]);
+            weatherData = await fetchData(weatherUrl);
         } catch (apiError) {
-            console.error('API Fetch Error:', apiError.message);
-            // Use dummy data on API failure to still generate a page
-            weatherData = { name: 'Tokyo', main: { temp: 'N/A', humidity: 'N/A' }, weather: [{ description: 'データ取得エラー' }], sys: { sunrise: 0, sunset: 0 } };
-            forecastData = { list: [] };
+            console.error('API Fetch Error (Weather):', apiError.message);
+            weatherData = { 
+                current_condition: [{ temp_C: 'N/A', humidity: 'N/A', lang_vi: [{value: 'Lỗi lấy dữ liệu'}] }],
+                weather: [{ astronomy: [{ sunrise: 'N/A', sunset: 'N/A' }], hourly: [] }],
+                nearest_area: [{ areaName: [{value: 'Tokyo'}] }]
+            };
         }
 
-
         // 3. Process Weather Data
-        const cityName = weatherData.name;
-        const currentTemp = weatherData.main ? `${Math.round(weatherData.main.temp)}°C` : 'N/A';
-        const weatherDesc = weatherData.weather && weatherData.weather[0] ? weatherData.weather[0].description : 'N/A';
-        const humidity = weatherData.main ? weatherData.main.humidity : 'N/A';
-        const sunrise = weatherData.sys ? formatTime(weatherData.sys.sunrise, weatherData.timezone) : 'N/A';
-        const sunset = weatherData.sys ? formatTime(weatherData.sys.sunset, weatherData.timezone) : 'N/A';
+        const cityName = weatherData.nearest_area[0].areaName[0].value;
+        const currentTemp = `${weatherData.current_condition[0].temp_C}°C`;
+        const weatherDesc = weatherData.current_condition[0].lang_vi[0].value;
+        const humidity = weatherData.current_condition[0].humidity;
+        const sunrise = weatherData.weather[0].astronomy[0].sunrise;
+        const sunset = weatherData.weather[0].astronomy[0].sunset;
 
         // 4. Generate Forecast HTML
         let forecastHtml = '';
-        if (forecastData.list && forecastData.list.length > 0) {
-            forecastData.list.slice(0, 4).forEach(item => {
-                const time = new Date(item.dt * 1000);
+        if (weatherData.weather[0].hourly && weatherData.weather[0].hourly.length > 0) {
+            // wttr.in provides 8 hourly forecasts for the day (every 3 hours)
+            // We'll take the next 4 available forecasts
+            const nowHour = new Date().getHours();
+            const hourlyForecasts = weatherData.weather[0].hourly;
+            
+            // Find the first forecast that is in the future
+            let startIndex = hourlyForecasts.findIndex(f => parseInt(f.time) / 100 > nowHour);
+            if (startIndex === -1) startIndex = 0; // if all are in the past, show from start
+
+            const forecastsToShow = hourlyForecasts.slice(startIndex, startIndex + 4);
+
+            forecastsToShow.forEach(item => {
+                const time = parseInt(item.time) / 100;
+                const temp = item.tempC;
+                const desc = item.lang_vi[0].value;
                 forecastHtml += `
                     <div class="forecast-item">
-                        <div style="font-weight: bold;">${time.getHours()}:00</div>
-                        <div style="font-size: 24px; margin: 5px 0;">${Math.round(item.main.temp)}°C</div>
-                        <div>${item.weather[0].description}</div>
+                        <div style="font-weight: bold;">${time}:00</div>
+                        <div style="font-size: 24px; margin: 5px 0;">${Math.round(temp)}°C</div>
+                        <div>${desc}</div>
                     </div>
                 `;
             });
         } else {
-            forecastHtml = '<p>予報データがありません。</p>';
+            forecastHtml = '<p>Không có dữ liệu dự báo.</p>';
         }
 
-        // 5. Read Template and Replace Placeholders
+        // 5. Get Quote
+        console.log('📖 Selecting a quote from local file...');
+        let quoteOfTheDay = 'Hãy biến mỗi ngày thành một kiệt tác.'; // Default quote
+        try {
+            const quotesData = fs.readFileSync('src/quotes.json', 'utf-8');
+            const quotes = JSON.parse(quotesData).quotes;
+            quoteOfTheDay = quotes[Math.floor(Math.random() * quotes.length)];
+        } catch (quoteError) {
+            console.warn('⚠️ Could not read or parse quotes.json. Using default quote.');
+        }
+
+        // 6. Read Template and Replace Placeholders
         console.log('📝 Reading template and inserting data...');
         const template = fs.readFileSync('src/template.html', 'utf-8');
 
@@ -119,19 +149,16 @@ async function generateDashboard() {
             .replace('{{SUNRISE}}', sunrise)
             .replace('{{SUNSET}}', sunset)
             .replace('{{FORECAST_ITEMS}}', forecastHtml)
-            .replace('{{LAST_UPDATE}}', new Intl.DateTimeFormat('ja-JP', { timeStyle: 'short', timeZone: 'Asia/Tokyo' }).format(now));
+            .replace('{{QUOTE_OF_THE_DAY}}', quoteOfTheDay)
+            .replace('{{LAST_UPDATE}}', new Intl.DateTimeFormat('vi-VN', { timeStyle: 'short', timeZone: 'Asia/Tokyo' }).format(now));
 
-        // 6. Write Final HTML
+        // 7. Write Final HTML
         if (!fs.existsSync('public')) {
             fs.mkdirSync('public', { recursive: true });
         }
         fs.writeFileSync('public/index.html', html);
 
         console.log('✅ Generated public/index.html successfully!');
-        if (CONFIG.weatherApiKey === 'YOUR_API_KEY_HERE') {
-            console.warn('⚠️ WARNING: OpenWeatherMap API key is not set. Weather data will fail to load.');
-            console.warn('Please set the OPENWEATHER_API_KEY environment variable or replace the placeholder in generate-calendar.js.');
-        }
 
     } catch (error) {
         console.error('❌ An error occurred during dashboard generation:', error);
