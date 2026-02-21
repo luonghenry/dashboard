@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Kindle Dashboard</title>
-    <meta http-equiv="refresh" content="600">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -101,7 +103,7 @@
         .holidays h3 { font-size: clamp(13px,2.8vw,17px); margin-bottom: clamp(4px,1vw,8px); border-bottom: 1px solid #000; padding-bottom: 3px; }
         .holiday-item { padding: clamp(2px,0.8vw,4px) 0; border-bottom: 1px dotted #ccc; }
 
-        /* ── Quote ── */
+        /* ── Quote (Tab 1) ── */
         .quote {
             border: 2px solid #000;
             padding: clamp(8px,2vw,12px);
@@ -129,7 +131,7 @@
             padding: clamp(20px,5vw,50px) clamp(15px,4vw,40px);
             background-size: cover;
             background-position: center;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect fill="%23222" width="600" height="800"/><text x="300" y="400" font-size="18" fill="%23555" text-anchor="middle" font-family="monospace">Upload /images/lockscreen.jpg</text></svg>');
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect fill="%23222" width="600" height="800"/><text x="300" y="400" font-size="18" fill="%23555" text-anchor="middle" font-family="monospace">Upload images/lockscreen.jpg</text></svg>');
         }
         .lock-overlay {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -191,10 +193,7 @@
             min-height: 10px;
             text-align: left;
         }
-        .big-holidays .holiday-item {
-            padding: clamp(2px,0.8vw,5px) 0;
-            border-bottom: 1px dotted #ccc;
-        }
+        .big-holidays .holiday-item { padding: clamp(2px,0.8vw,5px) 0; border-bottom: 1px dotted #ccc; }
         .bigcal { width: 100%; max-width: 560px; }
         .bigcal table { width: 100%; border-collapse: collapse; }
         .bigcal th {
@@ -213,6 +212,28 @@
         }
         .bigcal td.today { background: #000; color: #fff; font-weight: bold; border: 2px solid #000; }
         .bigcal td.holiday { color: #c00; font-weight: bold; }
+
+        /* ── Quote (Tab 4) ── */
+        .big-quote {
+            width: 100%;
+            max-width: 560px;
+            margin-top: clamp(14px,3vw,24px);
+            padding: clamp(10px,2vw,16px);
+            border-top: 2px solid #000;
+            font-style: italic;
+            line-height: 1.6;
+        }
+        .big-quote-text {
+            font-size: clamp(13px,2.8vw,18px);
+            margin-bottom: clamp(6px,1.5vw,10px);
+        }
+        .big-quote-author {
+            font-size: clamp(12px,2.5vw,15px);
+            text-align: right;
+            font-style: normal;
+            font-weight: bold;
+            opacity: 0.7;
+        }
 
         /* ── Footer ── */
         .footer { text-align: center; font-size: clamp(9px,2vw,12px); opacity: 0.6; margin-top: 10px; padding-bottom: 8px; }
@@ -260,8 +281,8 @@
 <!-- ══════════════ TAB 1: Dashboard ══════════════ -->
 <div id="tab1" class="tab-content">
     <div class="clock">
-        <div id="time">12:46:00</div>
-        <div id="date">2026年02月20日（金）</div>
+        <div id="time">20:43:00</div>
+        <div id="date">2026年02月21日（土）</div>
     </div>
     <div class="fx-rate">
         <div>💱 JPY / VND</div>
@@ -298,8 +319,8 @@
     <div class="lockscreen">
         <div class="lock-overlay"></div>
         <div class="lock-content">
-            <div class="lock-time" id="lockTime">12:46</div>
-            <div class="lock-date" id="lockDate">金曜日, 2月20日</div>
+            <div class="lock-time" id="lockTime">20:43</div>
+            <div class="lock-date" id="lockDate">土曜日, 2月21日</div>
         </div>
         <div class="lock-info">
             <div class="lock-weather" id="lockWeather">⛅ --°C · Tokyo</div>
@@ -329,11 +350,15 @@
 <!-- ══════════════ TAB 4: Big Clock (DEFAULT) ══════════════ -->
 <div id="tab4" class="tab-content active">
     <div class="bigclock-wrap">
-        <div id="bigTime">12:46</div>
-        <div id="bigDate">2026年02月20日（金）</div>
+        <div id="bigTime">20:43</div>
+        <div id="bigDate">2026年02月21日（土）</div>
         <div class="big-holidays" id="bigHolidayList"></div>
         <div class="bigcal">
             <table id="bigCalendar"></table>
+        </div>
+        <div class="big-quote">
+            <div class="big-quote-text" id="bigQuoteText"></div>
+            <div class="big-quote-author" id="bigQuoteAuthor"></div>
         </div>
     </div>
 </div>
@@ -452,10 +477,12 @@
 
     /* ── Quote ── */
     function showQuote() {
-        document.getElementById('quoteText').innerHTML   = '"' + selectedQuote[0] + '"';
-        document.getElementById('quoteAuthor').innerHTML = '— ' + selectedQuote[1];
-        document.getElementById('lockQuote').innerHTML   = '"' + selectedQuote[0] + '"';
-        document.getElementById('lockAuthor').innerHTML  = '— ' + selectedQuote[1];
+        document.getElementById('quoteText').innerHTML      = '"' + selectedQuote[0] + '"';
+        document.getElementById('quoteAuthor').innerHTML    = '— ' + selectedQuote[1];
+        document.getElementById('lockQuote').innerHTML      = '"' + selectedQuote[0] + '"';
+        document.getElementById('lockAuthor').innerHTML     = '— ' + selectedQuote[1];
+        document.getElementById('bigQuoteText').innerHTML   = '"' + selectedQuote[0] + '"';
+        document.getElementById('bigQuoteAuthor').innerHTML = '— ' + selectedQuote[1];
     }
 
     /* ── FX Rate ── */
@@ -500,10 +527,10 @@
         var wmo = getWMO(cw.weathercode);
         var t   = Math.round(cw.temperature);
 
-        document.getElementById('wTemp').innerHTML      = t + '°C';
-        document.getElementById('wIcon').innerHTML      = wmo[0];
-        document.getElementById('wDesc').innerHTML      = wmo[1];
-        document.getElementById('wWind').innerHTML      = Math.round(cw.windspeed) + ' km/h';
+        document.getElementById('wTemp').innerHTML       = t + '°C';
+        document.getElementById('wIcon').innerHTML       = wmo[0];
+        document.getElementById('wDesc').innerHTML       = wmo[1];
+        document.getElementById('wWind').innerHTML       = Math.round(cw.windspeed) + ' km/h';
         document.getElementById('lockWeather').innerHTML = wmo[0] + ' ' + t + '°C · Tokyo';
 
         var hr  = getJST().getHours();
@@ -708,6 +735,11 @@
     setInterval(updateClock, 1000);
     setInterval(loadFX,      15 * 60 * 1000);
     setInterval(loadWeather, 30 * 60 * 1000);
+
+    // Reload bypass cache mỗi 10 phút
+    setInterval(function() {
+        window.location.href = window.location.href.split('?')[0] + '?t=' + new Date().getTime();
+    }, 10 * 60 * 1000);
 
 </script>
 </body>
