@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kindle Dashboard</title>
+    <meta http-equiv="refresh" content="600">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #fff;
+            color: #000;
+            width: 100vw;
+            max-width: 100%;
+            margin: 0 auto;
+            overflow-x: hidden;
+        }
+
+        /* ── Tabs ── */
+        .tabs {
+            display: flex;
+            border-bottom: 3px solid #000;
+            background: #f0f0f0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: clamp(8px,2vw,12px);
+            background: #e0e0e0;
+            border: none;
+            border-right: 2px solid #000;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(11px,2.2vw,15px);
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .tab-btn:last-child { border-right: none; }
+        .tab-btn.active { background: #fff; }
+
+        .tab-content { display: none; padding: clamp(10px,2vw,15px); font-size: clamp(14px,2.5vw,16px); line-height: 1.3; }
+        .tab-content.active { display: block; }
+
+        /* ── Clock (Tab 1) ── */
+        .clock { text-align: center; margin-bottom: clamp(10px,3vw,20px); }
+        #time { font-size: clamp(36px,10vw,72px); font-weight: bold; letter-spacing: clamp(2px,1vw,8px); }
+        #date { font-size: clamp(14px,3vw,22px); margin-top: clamp(4px,1vw,10px); }
+
+        /* ── FX Rate ── */
+        .fx-rate {
+            background: #f8f8f8;
+            border: 2px solid #000;
+            padding: clamp(8px,2vw,12px);
+            margin-bottom: clamp(10px,2vw,15px);
+            text-align: center;
+        }
+        .rate-big { font-size: clamp(20px,5vw,32px); font-weight: bold; }
+
+        /* ── Weather ── */
+        .weather {
+            border: 2px solid #000;
+            padding: clamp(8px,2vw,12px);
+            margin-bottom: clamp(10px,2vw,15px);
+            background: #f8f8f8;
+        }
+        .weather-header { font-size: clamp(12px,2.5vw,14px); margin-bottom: 6px; }
+        .weather-main { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .weather-temp { font-size: clamp(28px,6vw,40px); font-weight: bold; }
+        .weather-icon { font-size: clamp(28px,6vw,40px); }
+        .weather-info { font-size: clamp(12px,2.5vw,15px); line-height: 1.6; }
+
+        /* ── Calendar (Tab 1) ── */
+        .calendar { border: 2px solid #000; margin-bottom: clamp(10px,2vw,15px); padding: clamp(6px,1.5vw,10px); overflow-x: auto; }
+        .calendar table { width: 100%; font-size: clamp(11px,2.5vw,16px); border-collapse: collapse; }
+        .calendar th { border-bottom: 2px solid #000; padding: clamp(3px,1vw,6px); background: #f0f0f0; }
+        .calendar td {
+            border-right: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+            width: 14.28%;
+            height: clamp(24px,5vw,36px);
+            padding: 2px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        .calendar td.today { background: #ddd; font-weight: bold; border: 2px solid #000; }
+        .calendar td.holiday { color: #c00; font-weight: bold; }
+
+        /* ── Holidays ── */
+        .holidays {
+            border: 2px solid #000;
+            padding: clamp(6px,1.5vw,10px);
+            font-size: clamp(11px,2.3vw,14px);
+            margin-bottom: clamp(8px,2vw,12px);
+            max-height: clamp(80px,15vh,120px);
+            overflow-y: auto;
+        }
+        .holidays h3 { font-size: clamp(13px,2.8vw,17px); margin-bottom: clamp(4px,1vw,8px); border-bottom: 1px solid #000; padding-bottom: 3px; }
+        .holiday-item { padding: clamp(2px,0.8vw,4px) 0; border-bottom: 1px dotted #ccc; }
+
+        /* ── Quote ── */
+        .quote {
+            border: 2px solid #000;
+            padding: clamp(8px,2vw,12px);
+            margin-bottom: clamp(8px,2vw,12px);
+            background: #f9f9f9;
+            font-size: clamp(11px,2.3vw,14px);
+            font-style: italic;
+            line-height: 1.5;
+            min-height: clamp(60px,12vh,90px);
+        }
+        .quote-text { margin-bottom: clamp(4px,1vw,8px); }
+        .quote-author { text-align: right; font-weight: bold; font-style: normal; }
+
+        /* ── Lock Screen (Tab 2) ── */
+        .lockscreen {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 45px);
+            min-height: 500px;
+            background: #222;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: clamp(20px,5vw,50px) clamp(15px,4vw,40px);
+            background-size: cover;
+            background-position: center;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect fill="%23222" width="600" height="800"/><text x="300" y="400" font-size="18" fill="%23555" text-anchor="middle" font-family="monospace">Upload /images/lockscreen.jpg</text></svg>');
+        }
+        .lock-overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(180deg,rgba(0,0,0,0.6) 0%,rgba(0,0,0,0.25) 50%,rgba(0,0,0,0.7) 100%);
+            z-index: 1;
+        }
+        .lock-content { position: relative; z-index: 2; text-align: center; }
+        .lock-time {
+            font-size: clamp(52px,15vw,100px);
+            font-weight: bold;
+            letter-spacing: clamp(2px,1vw,6px);
+            text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+            margin-bottom: clamp(6px,2vw,15px);
+        }
+        .lock-date { font-size: clamp(16px,4vw,28px); text-shadow: 0 2px 4px rgba(0,0,0,0.9); }
+        .lock-info { position: relative; z-index: 2; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.9); }
+        .lock-weather { font-size: clamp(18px,4.5vw,28px); font-weight: bold; margin-bottom: clamp(10px,3vw,20px); }
+        .lock-quote { font-size: clamp(13px,3vw,18px); font-style: italic; line-height: 1.5; padding: 0 clamp(10px,4vw,30px); margin-bottom: 8px; color: #eee; }
+        .lock-author { font-size: clamp(11px,2.5vw,15px); opacity: 0.85; color: #ccc; }
+
+        /* ── News (Tab 3) ── */
+        .news-section { margin-bottom: clamp(15px,3vw,25px); }
+        .news-section h2 { font-size: clamp(15px,3.5vw,20px); border-bottom: 3px solid #000; padding-bottom: clamp(4px,1vw,8px); margin-bottom: clamp(8px,2vw,12px); }
+        .news-list { max-height: clamp(250px,40vh,400px); overflow-y: auto; border: 2px solid #000; padding: clamp(8px,2vw,12px); background: #fafafa; }
+        .news-item { padding: clamp(6px,1.5vw,10px) 0; border-bottom: 1px solid #ccc; font-size: clamp(11px,2.3vw,14px); line-height: 1.5; }
+        .news-item:last-child { border-bottom: none; }
+        .news-title { font-weight: bold; margin-bottom: clamp(3px,0.8vw,5px); }
+        .news-source { font-size: clamp(9px,2vw,12px); color: #666; }
+        .news-loading { text-align: center; padding: 20px; font-style: italic; }
+
+        /* ── Big Clock (Tab 4) ── */
+        .bigclock-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 45px);
+            padding: clamp(10px,3vw,20px);
+            text-align: center;
+        }
+        #bigTime {
+            font-size: clamp(72px,22vw,180px);
+            font-weight: bold;
+            letter-spacing: clamp(4px,2vw,16px);
+            line-height: 1;
+            margin-bottom: clamp(6px,1.5vw,16px);
+        }
+        #bigDate {
+            font-size: clamp(18px,4.5vw,36px);
+            margin-bottom: clamp(10px,2vw,18px);
+            letter-spacing: 2px;
+        }
+        .big-holidays {
+            width: 100%;
+            max-width: 560px;
+            font-size: clamp(12px,2.8vw,18px);
+            margin-bottom: clamp(10px,2vw,16px);
+            line-height: 1.6;
+            min-height: 10px;
+            text-align: left;
+        }
+        .big-holidays .holiday-item {
+            padding: clamp(2px,0.8vw,5px) 0;
+            border-bottom: 1px dotted #ccc;
+        }
+        .bigcal { width: 100%; max-width: 560px; }
+        .bigcal table { width: 100%; border-collapse: collapse; }
+        .bigcal th {
+            border-bottom: 2px solid #000;
+            padding: clamp(4px,1.5vw,10px);
+            background: #f0f0f0;
+            font-size: clamp(14px,3vw,22px);
+        }
+        .bigcal td {
+            border: 1px solid #ccc;
+            width: 14.28%;
+            height: clamp(32px,7vw,56px);
+            text-align: center;
+            vertical-align: middle;
+            font-size: clamp(14px,3vw,20px);
+        }
+        .bigcal td.today { background: #000; color: #fff; font-weight: bold; border: 2px solid #000; }
+        .bigcal td.holiday { color: #c00; font-weight: bold; }
+
+        /* ── Footer ── */
+        .footer { text-align: center; font-size: clamp(9px,2vw,12px); opacity: 0.6; margin-top: 10px; padding-bottom: 8px; }
+
+        /* ── Media Queries ── */
+        @media (max-width: 480px) {
+            .tab-btn { padding: 8px 3px; font-size: 10px; }
+            #time { font-size: 36px; }
+            #bigTime { font-size: 60px; }
+        }
+        @media (min-width: 481px) and (max-width: 768px) {
+            #time { font-size: 56px; }
+            #bigTime { font-size: 100px; }
+        }
+        @media (min-width: 769px) and (max-width: 1024px) {
+            body { max-width: 800px; margin: 0 auto; }
+            #time { font-size: 64px; }
+            #bigTime { font-size: 140px; }
+        }
+        @media (min-width: 1025px) {
+            body { max-width: 900px; margin: 0 auto; }
+            .tab-content { padding: 20px 30px; }
+            #time { font-size: 72px; }
+            #bigTime { font-size: 180px; }
+            .calendar td { height: 40px; font-size: 16px; }
+            .news-list { max-height: 450px; }
+        }
+        @media (orientation: landscape) and (max-height: 600px) {
+            .lockscreen { height: 100vh; }
+            .lock-time { font-size: clamp(36px,12vw,72px); }
+            #bigTime { font-size: clamp(48px,14vw,100px); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── Tabs ── -->
+<div class="tabs">
+    <button class="tab-btn" onclick="switchTab(0)">📊 Info</button>
+    <button class="tab-btn" onclick="switchTab(1)">🔒 Lock</button>
+    <button class="tab-btn" onclick="switchTab(2)">📰 News</button>
+    <button class="tab-btn active" onclick="switchTab(3)">🕐 Clock</button>
+</div>
+
+<!-- ══════════════ TAB 1: Dashboard ══════════════ -->
+<div id="tab1" class="tab-content">
+    <div class="clock">
+        <div id="time">12:46:00</div>
+        <div id="date">2026年02月20日（金）</div>
+    </div>
+    <div class="fx-rate">
+        <div>💱 JPY / VND</div>
+        <div id="fxrate" class="rate-big">1 JPY = --- VND</div>
+        <div id="fxtime" style="font-size:11px;opacity:0.6;"></div>
+    </div>
+    <div class="weather">
+        <div class="weather-header">⛅ Tokyo – Thời tiết hiện tại</div>
+        <div class="weather-main">
+            <div class="weather-temp" id="wTemp">--°C</div>
+            <div class="weather-icon" id="wIcon">⛅</div>
+        </div>
+        <div class="weather-info">
+            <span id="wDesc">Đang tải...</span><br>
+            💧 Độ ẩm: <b id="wHumidity">--%</b> &nbsp; 💨 Gió: <b id="wWind">-- km/h</b>
+        </div>
+    </div>
+    <div class="calendar">
+        <table id="calendar"></table>
+    </div>
+    <div class="holidays">
+        <h3>🎌 Lễ tháng này</h3>
+        <div id="holidayList">Đang tải...</div>
+    </div>
+    <div class="quote">
+        <div class="quote-text" id="quoteText">Đang tải...</div>
+        <div class="quote-author" id="quoteAuthor"></div>
+    </div>
+    <div class="footer">Kindle Dashboard · Saitama Homelab</div>
+</div>
+
+<!-- ══════════════ TAB 2: Lock Screen ══════════════ -->
+<div id="tab2" class="tab-content">
+    <div class="lockscreen">
+        <div class="lock-overlay"></div>
+        <div class="lock-content">
+            <div class="lock-time" id="lockTime">12:46</div>
+            <div class="lock-date" id="lockDate">金曜日, 2月20日</div>
+        </div>
+        <div class="lock-info">
+            <div class="lock-weather" id="lockWeather">⛅ --°C · Tokyo</div>
+            <div class="lock-quote" id="lockQuote">"..."</div>
+            <div class="lock-author" id="lockAuthor"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════ TAB 3: RSS News ══════════════ -->
+<div id="tab3" class="tab-content">
+    <div class="news-section">
+        <h2>🇯🇵 Nhật Bản – Top Stories</h2>
+        <div id="newsJP" class="news-list">
+            <div class="news-loading">Đang tải...</div>
+        </div>
+    </div>
+    <div class="news-section">
+        <h2>🇻🇳 Việt Nam – Tin nổi bật</h2>
+        <div id="newsVN" class="news-list">
+            <div class="news-loading">Đang tải...</div>
+        </div>
+    </div>
+    <div class="footer">Google News RSS · rss2json API</div>
+</div>
+
+<!-- ══════════════ TAB 4: Big Clock (DEFAULT) ══════════════ -->
+<div id="tab4" class="tab-content active">
+    <div class="bigclock-wrap">
+        <div id="bigTime">12:46</div>
+        <div id="bigDate">2026年02月20日（金）</div>
+        <div class="big-holidays" id="bigHolidayList"></div>
+        <div class="bigcal">
+            <table id="bigCalendar"></table>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════ JavaScript ══════════════ -->
+<script type="text/javascript">
+
+    /* ── Constants ── */
+    var WEEKDAYS      = ['日','月','火','水','木','金','土'];
+    var WEEKDAYS_FULL = ['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'];
+    var JST_OFFSET    = 9 * 60;
+    var holidayDates  = {};
+
+    var WMO = {
+        0:['☀️','Trời quang'],    1:['🌤️','Ít mây'],       2:['⛅','Có mây'],
+        3:['☁️','Nhiều mây'],     45:['🌫️','Sương mù'],    48:['🌫️','Sương đá'],
+        51:['🌦️','Mưa phùn nhẹ'], 53:['🌦️','Mưa phùn'],   55:['🌧️','Mưa phùn dày'],
+        61:['🌧️','Mưa nhẹ'],     63:['🌧️','Mưa vừa'],     65:['🌧️','Mưa to'],
+        71:['🌨️','Tuyết nhẹ'],   73:['🌨️','Tuyết vừa'],   75:['❄️','Tuyết dày'],
+        80:['🌦️','Mưa rào nhẹ'],  81:['🌧️','Mưa rào'],    82:['⛈️','Mưa rào to'],
+        95:['⛈️','Dông bão'],     96:['⛈️','Dông+mưa đá'], 99:['⛈️','Dông lớn']
+    };
+
+    var QUOTES = [
+        ["Nếu bạn thực sự muốn làm điều gì đó, bạn sẽ tìm ra cách. Nếu không, bạn sẽ tìm thấy một cái cớ.", "Jim Rohn"],
+        ["Đừng ngại từ bỏ điều tốt đẹp để đạt được điều vĩ đại.", "John D. Rockefeller"],
+        ["Thành công thường đạt được bởi những người không biết rằng thất bại là không thể tránh khỏi.", "Coco Chanel"],
+        ["Nếu bạn mơ ước được, bạn sẽ làm được.", "Walt Disney"],
+        ["Cách duy nhất để làm công việc tuyệt vời là yêu những gì bạn làm.", "Steve Jobs"],
+        ["Thành công là đi từ thất bại này sang thất bại khác mà không mất đi sự nhiệt tình.", "Winston Churchill"],
+        ["Hành động là chìa khóa nền tảng cho mọi thành công.", "Pablo Picasso"],
+        ["Tôi không thất bại. Tôi chỉ tìm thấy 10,000 cách không hiệu quả.", "Thomas Edison"],
+        ["Tương lai thuộc về những người tin vào vẻ đẹp của giấc mơ mình.", "Eleanor Roosevelt"],
+        ["Bạn không cần phải tuyệt vời để bắt đầu, nhưng bạn phải bắt đầu để trở nên tuyệt vời.", "Zig Ziglar"],
+        ["Đừng chờ đợi. Thời điểm sẽ không bao giờ hoàn hảo.", "Napoleon Hill"],
+        ["Người chiến thắng không bao giờ bỏ cuộc. Người bỏ cuộc không bao giờ chiến thắng.", "Vince Lombardi"],
+        ["Mơ ước lớn. Bắt đầu nhỏ. Nhưng trên hết, hãy bắt đầu.", "Simon Sinek"],
+        ["Thành công không phải là chìa khóa của hạnh phúc. Hạnh phúc là chìa khóa của thành công.", "Albert Schweitzer"],
+        ["Tôi thất bại nhiều lần. Và đó là lý do tôi thành công.", "Michael Jordan"],
+        ["Hãy đầu tư vào bản thân mình. Đó là khoản đầu tư tốt nhất bạn từng thực hiện.", "Robin Sharma"],
+        ["Nếu bạn không xây dựng giấc mơ của mình, ai đó sẽ thuê bạn để xây dựng giấc mơ của họ.", "Tony Gaskins"],
+        ["Thái độ của bạn, chứ không phải năng lực của bạn, sẽ quyết định độ cao của bạn.", "Zig Ziglar"],
+        ["Cơ hội không tự nhiên đến. Bạn tự tạo ra nó.", "Chris Grosser"],
+        ["Sự kiên trì chiến thắng tài năng khi tài năng không kiên trì.", "John Wooden"],
+        ["Hãy cố gắng đừng trở thành người thành công. Thay vào đó hãy trở thành người có giá trị.", "Albert Einstein"],
+        ["Không có bí quyết cho thành công. Đó là kết quả của sự chuẩn bị, làm việc chăm chỉ và học hỏi từ thất bại.", "Colin Powell"],
+        ["Thành công là làm những gì bạn yêu thích và yêu thích những gì bạn làm.", "Wayne Dyer"],
+        ["Cách tốt nhất để dự đoán tương lai là tự tạo ra nó.", "Peter Drucker"],
+        ["Hãy sống như thể bạn sẽ chết ngày mai. Học như thể bạn sẽ sống mãi mãi.", "Mahatma Gandhi"],
+        ["Chúng ta tạo ra cuộc sống của mình và chúng ta tạo ra nó mỗi ngày.", "Oprah Winfrey"],
+        ["Bạn càng đam mê điều gì, bạn càng thành công trong điều đó.", "Oprah Winfrey"],
+        ["Đừng đếm ngày. Hãy làm cho mỗi ngày có ý nghĩa.", "Muhammad Ali"],
+        ["Bạn là kiến trúc sư của số phận của chính mình.", "Khuyết danh"],
+        ["Đừng sợ thất bại. Sợ không cố gắng.", "Khuyết danh"]
+    ];
+
+    var selectedQuote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+
+    /* ── Helpers ── */
+    function pad(n) { return (n < 10) ? '0' + n : '' + n; }
+
+    function getJST() {
+        var now = new Date();
+        var utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        return new Date(utc + (JST_OFFSET * 60000));
+    }
+
+    function getWMO(code) {
+        if (WMO[code]) return WMO[code];
+        if (code <= 3)  return ['⛅','Có mây'];
+        if (code <= 55) return ['🌦️','Mưa phùn'];
+        if (code <= 65) return ['🌧️','Mưa'];
+        if (code <= 77) return ['🌨️','Tuyết'];
+        if (code <= 82) return ['🌦️','Mưa rào'];
+        return ['⛈️','Dông bão'];
+    }
+
+    /* ── Tab Switch ── */
+    function switchTab(idx) {
+        var tabs = document.querySelectorAll('.tab-content');
+        var btns = document.querySelectorAll('.tab-btn');
+        for (var i = 0; i < tabs.length; i++) {
+            if (i === idx) {
+                tabs[i].className = 'tab-content active';
+                btns[i].className = 'tab-btn active';
+            } else {
+                tabs[i].className = 'tab-content';
+                btns[i].className = 'tab-btn';
+            }
+        }
+        if (idx === 2 && !window.rssLoaded) {
+            loadRSSFeeds();
+            window.rssLoaded = true;
+        }
+    }
+
+    /* ── Clock ── */
+    function updateClock() {
+        var jst = getJST();
+        var h   = pad(jst.getHours());
+        var m   = pad(jst.getMinutes());
+        var s   = pad(jst.getSeconds());
+        var yr  = jst.getFullYear();
+        var mo  = pad(jst.getMonth() + 1);
+        var dy  = pad(jst.getDate());
+        var wd  = WEEKDAYS[jst.getDay()];
+        var wdf = WEEKDAYS_FULL[jst.getDay()];
+
+        document.getElementById('time').innerHTML     = h + ':' + m + ':' + s;
+        document.getElementById('date').innerHTML     = yr + '年' + mo + '月' + dy + '日（' + wd + '）';
+        document.getElementById('lockTime').innerHTML = h + ':' + m;
+        document.getElementById('lockDate').innerHTML = wdf + ', ' + mo + '月' + dy + '日';
+        document.getElementById('bigTime').innerHTML  = h + ':' + m;
+        document.getElementById('bigDate').innerHTML  = yr + '年' + mo + '月' + dy + '日（' + wd + '）';
+    }
+
+    /* ── Quote ── */
+    function showQuote() {
+        document.getElementById('quoteText').innerHTML   = '"' + selectedQuote[0] + '"';
+        document.getElementById('quoteAuthor').innerHTML = '— ' + selectedQuote[1];
+        document.getElementById('lockQuote').innerHTML   = '"' + selectedQuote[0] + '"';
+        document.getElementById('lockAuthor').innerHTML  = '— ' + selectedQuote[1];
+    }
+
+    /* ── FX Rate ── */
+    function loadFX() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'https://api.exchangerate-api.com/v4/latest/JPY', true);
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                var d = JSON.parse(xhr.responseText);
+                if (d.rates && d.rates.VND) {
+                    var rate = Math.round(d.rates.VND * 100) / 100;
+                    document.getElementById('fxrate').innerHTML = '1 JPY = ' + rate + ' VND';
+                    var now = getJST();
+                    document.getElementById('fxtime').innerHTML = '更新 ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+                }
+            }
+        };
+        xhr.send();
+    }
+
+    /* ── Weather (Open-Meteo, no key) ── */
+    function loadWeather() {
+        var url = 'https://api.open-meteo.com/v1/forecast' +
+                  '?latitude=35.6762&longitude=139.6503' +
+                  '&current_weather=true' +
+                  '&hourly=relativehumidity_2m' +
+                  '&timezone=Asia%2FTokyo';
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.onload = function() {
+            if (xhr.status === 200) renderWeather(JSON.parse(xhr.responseText));
+            else document.getElementById('wDesc').innerHTML = 'Lỗi API';
+        };
+        xhr.onerror = function() {
+            document.getElementById('wDesc').innerHTML = 'Lỗi kết nối';
+        };
+        xhr.send();
+    }
+
+    function renderWeather(data) {
+        var cw  = data.current_weather;
+        var wmo = getWMO(cw.weathercode);
+        var t   = Math.round(cw.temperature);
+
+        document.getElementById('wTemp').innerHTML      = t + '°C';
+        document.getElementById('wIcon').innerHTML      = wmo[0];
+        document.getElementById('wDesc').innerHTML      = wmo[1];
+        document.getElementById('wWind').innerHTML      = Math.round(cw.windspeed) + ' km/h';
+        document.getElementById('lockWeather').innerHTML = wmo[0] + ' ' + t + '°C · Tokyo';
+
+        var hr  = getJST().getHours();
+        var hum = (data.hourly && data.hourly.relativehumidity_2m)
+                  ? (data.hourly.relativehumidity_2m[hr] || '--') : '--';
+        document.getElementById('wHumidity').innerHTML = hum + '%';
+    }
+
+    /* ── Holidays ── */
+    function loadHolidays() {
+        var year = getJST().getFullYear();
+
+        var xhrJP = new XMLHttpRequest();
+        xhrJP.open('GET', 'https://holidays-jp.github.io/api/v1/' + year + '/date.json', true);
+        xhrJP.onload = function() {
+            if (xhrJP.status === 200) displayHolidays(JSON.parse(xhrJP.responseText), 'JP');
+        };
+        xhrJP.send();
+
+        var xhrVN = new XMLHttpRequest();
+        xhrVN.open('GET', 'https://date.nager.at/api/v3/PublicHolidays/' + year + '/VN', true);
+        xhrVN.onload = function() {
+            if (xhrVN.status === 200) displayHolidays(JSON.parse(xhrVN.responseText), 'VN');
+        };
+        xhrVN.send();
+    }
+
+    function displayHolidays(data, country) {
+        var currentMonth = getJST().getMonth() + 1;
+        var html = '';
+
+        if (country === 'JP') {
+            for (var ds in data) {
+                var p  = ds.split('-');
+                var mo = parseInt(p[1]);
+                var dy = parseInt(p[2]);
+                if (mo === currentMonth) {
+                    html += '<div class="holiday-item">🇯🇵 ' + mo + '/' + dy + ' ' + data[ds] + '</div>';
+                    holidayDates[dy] = true;
+                }
+            }
+        } else {
+            for (var i = 0; i < data.length; i++) {
+                var p  = data[i].date.split('-');
+                var mo = parseInt(p[1]);
+                var dy = parseInt(p[2]);
+                if (mo === currentMonth) {
+                    html += '<div class="holiday-item">🇻🇳 ' + mo + '/' + dy + ' ' + data[i].localName + '</div>';
+                }
+            }
+        }
+
+        var el = document.getElementById('holidayList');
+        if (html) {
+            el.innerHTML = (el.innerHTML === 'Đang tải...' ? '' : el.innerHTML) + html;
+        } else if (el.innerHTML === 'Đang tải...') {
+            el.innerHTML = 'Không có lễ';
+        }
+
+        renderCalendar();
+        renderBigCalendar();
+        renderBigHolidays();
+    }
+
+    /* ── Big Holidays (Tab 4) ── */
+    function renderBigHolidays() {
+        var src = document.getElementById('holidayList');
+        var el  = document.getElementById('bigHolidayList');
+        if (!src || !el) return;
+        el.innerHTML = (src.innerHTML === 'Đang tải...') ? '' : src.innerHTML;
+    }
+
+    /* ── Calendar (Tab 1) ── */
+    function renderCalendar() {
+        var jst      = getJST();
+        var year     = jst.getFullYear();
+        var month    = jst.getMonth();
+        var today    = jst.getDate();
+        var table    = document.getElementById('calendar');
+        table.innerHTML = '';
+
+        var thead = document.createElement('thead');
+        var hr    = document.createElement('tr');
+        for (var i = 0; i < WEEKDAYS.length; i++) {
+            var th = document.createElement('th');
+            th.innerHTML = WEEKDAYS[i];
+            hr.appendChild(th);
+        }
+        thead.appendChild(hr);
+        table.appendChild(thead);
+
+        var tbody    = document.createElement('tbody');
+        var firstDay = new Date(year, month, 1).getDay();
+        var total    = new Date(year, month + 1, 0).getDate();
+        var row      = document.createElement('tr');
+
+        for (var i = 0; i < firstDay; i++) row.appendChild(document.createElement('td'));
+
+        for (var d = 1; d <= total; d++) {
+            if ((firstDay + d - 1) % 7 === 0 && d !== 1) {
+                tbody.appendChild(row);
+                row = document.createElement('tr');
+            }
+            var td = document.createElement('td');
+            td.innerHTML = d;
+            if (d === today) td.className = 'today';
+            if (holidayDates[d]) td.className = (td.className ? td.className + ' ' : '') + 'holiday';
+            row.appendChild(td);
+        }
+        tbody.appendChild(row);
+        table.appendChild(tbody);
+    }
+
+    /* ── Big Calendar (Tab 4) ── */
+    function renderBigCalendar() {
+        var jst      = getJST();
+        var year     = jst.getFullYear();
+        var month    = jst.getMonth();
+        var today    = jst.getDate();
+        var table    = document.getElementById('bigCalendar');
+        table.innerHTML = '';
+
+        var thead = document.createElement('thead');
+        var hr    = document.createElement('tr');
+        for (var i = 0; i < WEEKDAYS.length; i++) {
+            var th = document.createElement('th');
+            th.innerHTML = WEEKDAYS[i];
+            hr.appendChild(th);
+        }
+        thead.appendChild(hr);
+        table.appendChild(thead);
+
+        var tbody    = document.createElement('tbody');
+        var firstDay = new Date(year, month, 1).getDay();
+        var total    = new Date(year, month + 1, 0).getDate();
+        var row      = document.createElement('tr');
+
+        for (var i = 0; i < firstDay; i++) row.appendChild(document.createElement('td'));
+
+        for (var d = 1; d <= total; d++) {
+            if ((firstDay + d - 1) % 7 === 0 && d !== 1) {
+                tbody.appendChild(row);
+                row = document.createElement('tr');
+            }
+            var td = document.createElement('td');
+            td.innerHTML = d;
+            if (d === today) td.className = 'today';
+            if (holidayDates[d]) td.className = (td.className ? td.className + ' ' : '') + 'holiday';
+            row.appendChild(td);
+        }
+        tbody.appendChild(row);
+        table.appendChild(tbody);
+    }
+
+    /* ── RSS News ── */
+    function loadRSSFeeds() {
+        fetchRSS('https://news.google.com/rss?hl=ja&gl=JP&ceid=JP:ja', 'newsJP', '🇯🇵');
+        fetchRSS('https://news.google.com/rss?hl=vi&gl=VN&ceid=VN:vi', 'newsVN', '🇻🇳');
+    }
+
+    function fetchRSS(feedUrl, targetId, flag) {
+        var api = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(feedUrl) + '&count=10';
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', api, true);
+        xhr.onload = function() {
+            if (xhr.status === 200) displayRSS(JSON.parse(xhr.responseText), targetId, flag);
+            else document.getElementById(targetId).innerHTML = '<div class="news-loading">Lỗi tải tin</div>';
+        };
+        xhr.onerror = function() {
+            document.getElementById(targetId).innerHTML = '<div class="news-loading">Lỗi kết nối</div>';
+        };
+        xhr.send();
+    }
+
+    function displayRSS(data, targetId, flag) {
+        var html = '';
+        if (data.items && data.items.length > 0) {
+            for (var i = 0; i < Math.min(data.items.length, 8); i++) {
+                var title  = data.items[i].title  || 'No title';
+                var source = data.items[i].author || 'Google News';
+                if (title.length > 100) title = title.substring(0, 97) + '...';
+                html += '<div class="news-item">' +
+                    '<div class="news-title">' + flag + ' ' + title + '</div>' +
+                    '<div class="news-source">' + source + '</div>' +
+                '</div>';
+            }
+        } else {
+            html = '<div class="news-loading">Không có tin</div>';
+        }
+        document.getElementById(targetId).innerHTML = html;
+    }
+
+    /* ── Init ── */
+    updateClock();
+    renderCalendar();
+    renderBigCalendar();
+    showQuote();
+    loadFX();
+    loadWeather();
+    loadHolidays();
+
+    setInterval(updateClock, 1000);
+    setInterval(loadFX,      15 * 60 * 1000);
+    setInterval(loadWeather, 30 * 60 * 1000);
+
+</script>
+</body>
+</html>

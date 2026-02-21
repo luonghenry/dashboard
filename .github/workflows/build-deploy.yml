@@ -1,69 +1,30 @@
-name: Build and Deploy Lunar Calendar
+name: Deploy to GitHub Pages
 
 on:
-  # Chạy khi push vào main branch
   push:
-    branches:
-      - main
-  
-  # Chạy tự động mỗi ngày lúc 00:00 UTC (7:00 JST)
-  schedule:
-    - cron: '0 0 * * *'
-  
-  # Cho phép chạy manual từ Actions tab
-  workflow_dispatch:
-
-# Cấp quyền cho GitHub Actions deploy lên Pages
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-# Chỉ cho phép 1 deployment chạy cùng lúc
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
+    branches: [ main ]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    
-    steps:
-      # 1. Checkout source code
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      
-      # 2. Setup Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      
-      # 3. Install dependencies
-      - name: Install dependencies
-        run: npm ci
-      
-      # 4. Generate static HTML
-      - name: Generate calendar HTML
-        run: npm run build
-      
-      # 5. Upload artifact cho GitHub Pages
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: './public'
-
   deploy:
-    needs: build
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    
     steps:
-      # Deploy lên GitHub Pages
+      - uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'      # Upload toàn bộ folder root
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
