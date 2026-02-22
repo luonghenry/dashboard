@@ -1,9 +1,0 @@
-{
-  "name": "dashboard",
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "build": "node src/generate-calendar.js"
-  },
-  "dependencies": {}
-}

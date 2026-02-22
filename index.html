@@ -7,615 +7,29 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Kindle Dashboard</title>
-    <style>
-        /* ── Reset ── */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: Bookerly, Georgia, 'Times New Roman', serif;
-            background: #fff;
-            color: #000;
-            width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
-            overflow-x: hidden;
-            /* E-ink: tăng contrast */
-            -webkit-font-smoothing: none;
-            font-smooth: never;
-        }
-
-        /* ══════════════════════════════
-           TABS
-        ══════════════════════════════ */
-        .tabs {
-            display: flex;
-            border-bottom: 3px solid #000;
-            background: #e8e8e8;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .tab-btn {
-            flex: 1;
-            padding: 10px 4px;
-            background: #d8d8d8;
-            border: none;
-            border-right: 2px solid #000;
-            font-family: Bookerly, Georgia, serif;
-            font-size: clamp(11px, 2vw, 14px);
-            font-weight: bold;
-            cursor: pointer;
-            white-space: nowrap;
-            /* E-ink: touch target tối thiểu 44px */
-            min-height: 44px;
-            letter-spacing: 0.5px;
-        }
-        .tab-btn:last-child { border-right: none; }
-        .tab-btn.active {
-            background: #fff;
-            border-bottom: 3px solid #fff;
-            margin-bottom: -3px;
-        }
-
-        .tab-content {
-            display: none;
-            padding: 12px;
-            font-size: clamp(13px, 2vw, 16px);
-            line-height: 1.5;
-        }
-        .tab-content.active { display: block; }
-
-        /* ══════════════════════════════
-           TAB 1 — INFO
-        ══════════════════════════════ */
-
-        /* Clock */
-        .clock {
-            text-align: center;
-            padding: 10px 0 12px;
-            border-bottom: 2px solid #000;
-            margin-bottom: 12px;
-        }
-        #time {
-            font-size: clamp(44px, 12vw, 80px);
-            font-weight: bold;
-            letter-spacing: 4px;
-            line-height: 1;
-        }
-        #date {
-            font-size: clamp(15px, 3vw, 22px);
-            margin-top: 6px;
-            letter-spacing: 1px;
-        }
-
-        /* FX */
-        .fx-rate {
-            border: 2px solid #000;
-            padding: 10px 14px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #f4f4f4;
-        }
-        .fx-label { font-size: clamp(12px, 2vw, 15px); }
-        .fx-val   { font-size: clamp(20px, 5vw, 30px); font-weight: bold; }
-        .fx-time  { font-size: clamp(10px, 1.8vw, 13px); opacity: 0.6; }
-
-        /* Weather */
-        .weather {
-            border: 2px solid #000;
-            padding: 10px 14px;
-            margin-bottom: 10px;
-            background: #f4f4f4;
-        }
-        .weather-header {
-            font-size: clamp(12px, 2vw, 14px);
-            font-weight: bold;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 6px;
-            margin-bottom: 8px;
-        }
-        .weather-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .weather-left { display: flex; align-items: center; gap: 12px; }
-        .weather-temp { font-size: clamp(32px, 8vw, 52px); font-weight: bold; }
-        .weather-icon { font-size: clamp(30px, 7vw, 46px); }
-        .weather-meta { font-size: clamp(12px, 2vw, 15px); line-height: 1.8; }
-
-        /* Calendar */
-        .cal-wrap {
-            border: 2px solid #000;
-            margin-bottom: 10px;
-            overflow-x: auto;
-        }
-        .cal-title {
-            background: #000;
-            color: #fff;
-            text-align: center;
-            padding: 6px;
-            font-size: clamp(13px, 2.5vw, 17px);
-            font-weight: bold;
-            letter-spacing: 2px;
-        }
-        .cal-wrap table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: clamp(12px, 2.5vw, 16px);
-        }
-        .cal-wrap th {
-            border-bottom: 2px solid #000;
-            padding: clamp(4px, 1vw, 8px);
-            background: #ececec;
-            text-align: center;
-        }
-        .cal-wrap td {
-            border: 1px solid #ccc;
-            width: 14.28%;
-            height: clamp(28px, 5vw, 40px);
-            text-align: center;
-            vertical-align: middle;
-            padding: 2px;
-        }
-        .cal-wrap td.today {
-            background: #000;
-            color: #fff;
-            font-weight: bold;
-        }
-        .cal-wrap td.holiday { color: #c00; font-weight: bold; }
-        .cal-wrap td.sat { color: #00c; }
-
-        /* Holidays */
-        .holidays {
-            border: 2px solid #000;
-            padding: 8px 12px;
-            margin-bottom: 10px;
-            font-size: clamp(11px, 2vw, 14px);
-            max-height: 110px;
-            overflow-y: auto;
-            background: #fafafa;
-        }
-        .holidays-title {
-            font-weight: bold;
-            font-size: clamp(12px, 2.2vw, 15px);
-            border-bottom: 1px solid #000;
-            margin-bottom: 6px;
-            padding-bottom: 3px;
-        }
-        .holiday-item {
-            padding: 3px 0;
-            border-bottom: 1px dotted #ccc;
-            line-height: 1.5;
-        }
-        .holiday-item:last-child { border-bottom: none; }
-
-        /* Quote */
-        .quote {
-            border: 2px solid #000;
-            padding: 10px 14px;
-            margin-bottom: 10px;
-            background: #fafafa;
-            font-style: italic;
-            line-height: 1.7;
-        }
-        .quote-text   { font-size: clamp(12px, 2.3vw, 16px); margin-bottom: 6px; }
-        .quote-author { font-size: clamp(11px, 2vw, 14px); text-align: right; font-style: normal; font-weight: bold; opacity: 0.8; }
-
-        /* ══════════════════════════════
-           TAB 2 — BIG CLOCK
-        ══════════════════════════════ */
-        .bigclock-wrap {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: calc(100vh - 50px);
-            padding: 10px 12px 20px;
-            text-align: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        #bigTime {
-            font-size: clamp(80px, 24vw, 200px);
-            font-weight: bold;
-            letter-spacing: clamp(4px, 2vw, 20px);
-            line-height: 1;
-        }
-        #bigDate {
-            font-size: clamp(18px, 4.5vw, 34px);
-            letter-spacing: 2px;
-        }
-        .big-holidays {
-            width: 100%;
-            max-width: 600px;
-            font-size: clamp(12px, 2.5vw, 17px);
-            text-align: left;
-            line-height: 1.7;
-        }
-        .bigcal { width: 100%; max-width: 600px; }
-        .bigcal table { width: 100%; border-collapse: collapse; }
-        .bigcal th {
-            border-bottom: 2px solid #000;
-            padding: clamp(5px, 1.5vw, 10px);
-            background: #ececec;
-            font-size: clamp(14px, 3vw, 22px);
-            text-align: center;
-        }
-        .bigcal td {
-            border: 1px solid #ccc;
-            height: clamp(34px, 7vw, 58px);
-            text-align: center;
-            vertical-align: middle;
-            font-size: clamp(14px, 3vw, 22px);
-        }
-        .bigcal td.today { background: #000; color: #fff; font-weight: bold; }
-        .bigcal td.holiday { color: #c00; font-weight: bold; }
-        .bigcal td.sat { color: #00c; }
-        .big-quote {
-            width: 100%;
-            max-width: 600px;
-            padding: 12px 0 0;
-            border-top: 2px solid #000;
-            font-style: italic;
-            line-height: 1.7;
-        }
-        .big-quote-text   { font-size: clamp(13px, 2.8vw, 18px); margin-bottom: 6px; }
-        .big-quote-author { font-size: clamp(12px, 2.2vw, 15px); text-align: right; font-style: normal; font-weight: bold; opacity: 0.7; }
-
-        /* ══════════════════════════════
-           TAB 3 — TIMER
-        ══════════════════════════════ */
-        .timer-wrap {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            padding: 10px 0;
-            align-items: center;
-        }
-        .timer-block { width: 100%; max-width: 560px; text-align: center; }
-        .timer-label {
-            font-size: clamp(15px, 3vw, 20px);
-            font-weight: bold;
-            letter-spacing: 2px;
-            margin-bottom: 10px;
-            border-bottom: 2px solid #000;
-            padding-bottom: 6px;
-        }
-        .sw-display, .cd-display {
-            font-size: clamp(56px, 15vw, 100px);
-            font-weight: bold;
-            letter-spacing: 4px;
-            line-height: 1;
-            margin-bottom: 14px;
-            font-variant-numeric: tabular-nums;
-        }
-        .cd-display.alert { animation: blink 0.5s step-end infinite; }
-        @keyframes blink { 50% { opacity: 0; } }
-
-        .timer-btns {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 12px;
-            flex-wrap: wrap;
-        }
-        .tbtn {
-            padding: 12px 20px;
-            font-family: Bookerly, Georgia, serif;
-            font-size: clamp(14px, 3vw, 18px);
-            font-weight: bold;
-            border: 2px solid #000;
-            cursor: pointer;
-            min-width: 90px;
-            min-height: 44px;
-            letter-spacing: 1px;
-        }
-        .tbtn-main         { background: #000; color: #fff; }
-        .tbtn-main.running { background: #fff; color: #000; }
-        .tbtn-sub          { background: #e0e0e0; color: #000; }
-
-        /* Countdown inputs */
-        .cd-inputs {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 14px;
-        }
-        .cd-input-group { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .cd-adj {
-            width: clamp(40px, 9vw, 54px);
-            height: clamp(36px, 8vw, 48px);
-            font-size: clamp(18px, 4vw, 26px);
-            font-weight: bold;
-            border: 2px solid #000;
-            background: #ececec;
-            cursor: pointer;
-        }
-        .cd-val  { font-size: clamp(30px, 8vw, 52px); font-weight: bold; min-width: 60px; font-variant-numeric: tabular-nums; }
-        .cd-unit { font-size: clamp(12px, 2.5vw, 16px); opacity: 0.6; }
-        .cd-sep  { font-size: clamp(30px, 8vw, 52px); font-weight: bold; margin-bottom: 20px; }
-        .cd-alert { font-size: clamp(15px, 3vw, 20px); font-weight: bold; min-height: 30px; color: #000; border: 2px solid #000; padding: 4px 10px; display: inline-block; }
-        .cd-alert:empty { border: none; }
-
-        /* Lap list */
-        .lap-list {
-            max-height: 120px;
-            overflow-y: auto;
-            border: 1px solid #000;
-            font-size: clamp(12px, 2.5vw, 15px);
-            text-align: left;
-        }
-        .lap-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 10px;
-            border-bottom: 1px solid #ddd;
-        }
-        .lap-item:last-child { border-bottom: none; }
-        .lap-item.fastest { background: #000; color: #fff; }
-        .lap-item.slowest { background: #e8e8e8; }
-
-        /* ══════════════════════════════
-           TAB 4 — CALCULATOR
-        ══════════════════════════════ */
-        .calc-wrap {
-            display: flex;
-            justify-content: center;
-            padding: 10px 0;
-        }
-        .calc { width: 100%; max-width: 480px; }
-        .calc-display {
-            background: #111;
-            color: #fff;
-            padding: 16px 20px;
-            text-align: right;
-            min-height: 110px;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            border: 2px solid #000;
-        }
-        .calc-expr {
-            font-size: clamp(14px, 3vw, 20px);
-            opacity: 0.5;
-            min-height: 22px;
-            margin-bottom: 4px;
-            word-break: break-all;
-            font-family: 'Helvetica Neue', Helvetica, sans-serif;
-        }
-        .calc-num {
-            font-size: clamp(44px, 12vw, 76px);
-            font-weight: 200;
-            letter-spacing: -1px;
-            line-height: 1;
-            word-break: break-all;
-            font-family: 'Helvetica Neue', Helvetica, sans-serif;
-        }
-        .calc-num.small  { font-size: clamp(30px, 8vw, 52px); }
-        .calc-num.xsmall { font-size: clamp(22px, 6vw, 38px); }
-        .calc-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 3px;
-            background: #111;
-            padding: 3px;
-            border: 2px solid #000;
-            border-top: none;
-        }
-        .cb {
-            /* E-ink: min 56px height for touch */
-            height: clamp(56px, 14vw, 88px);
-            font-size: clamp(20px, 5vw, 34px);
-            font-weight: 500;
-            border: none;
-            cursor: pointer;
-            font-family: 'Helvetica Neue', Helvetica, sans-serif;
-            border-radius: 4px;
-        }
-        .cb-num { background: #2a2a2a; color: #fff; }
-        .cb-fn  { background: #999; color: #000; font-weight: bold; }
-        .cb-op  { background: #e09000; color: #fff; font-size: clamp(22px, 6vw, 36px); }
-        .cb-op.active { background: #fff; color: #e09000; border: 2px solid #e09000; }
-        .cb-zero { grid-column: span 2; text-align: left; padding-left: clamp(20px,5vw,32px); }
-
-        /* ══════════════════════════════
-           TAB 5 — POMODORO
-        ══════════════════════════════ */
-        .pomo-wrap {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 10px 12px 20px;
-            gap: 14px;
-        }
-        .pomo-modes {
-            display: flex;
-            gap: 6px;
-            width: 100%;
-            max-width: 560px;
-        }
-        .pomo-mode-btn {
-            flex: 1;
-            padding: 10px 4px;
-            font-family: Bookerly, Georgia, serif;
-            font-size: clamp(11px, 2.2vw, 14px);
-            border: 2px solid #000;
-            background: #ececec;
-            cursor: pointer;
-            min-height: 44px;
-            font-weight: bold;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .pomo-mode-btn.active { background: #000; color: #fff; }
-
-        .pomo-ring-wrap {
-            position: relative;
-            width: clamp(190px, 50vw, 280px);
-            height: clamp(190px, 50vw, 280px);
-        }
-        .pomo-ring { width: 100%; height: 100%; transform: rotate(-90deg); }
-        .pomo-ring-bg { fill: none; stroke: #ccc; stroke-width: 12; }
-        .pomo-ring-fg {
-            fill: none;
-            stroke: #000;
-            stroke-width: 12;
-            stroke-linecap: butt;
-            transition: stroke-dashoffset 0.8s linear, stroke 0.3s;
-        }
-        .pomo-ring-fg.break { stroke: #555; }
-        .pomo-ring-inner {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            width: 80%;
-        }
-        .pomo-time  {
-            font-size: clamp(38px, 11vw, 64px);
-            font-weight: bold;
-            letter-spacing: 2px;
-            font-variant-numeric: tabular-nums;
-            line-height: 1;
-        }
-        .pomo-label { font-size: clamp(13px, 2.8vw, 17px); margin-top: 5px; opacity: 0.7; }
-        .pomo-count { font-size: clamp(15px, 3vw, 19px); margin-top: 6px; }
-
-        .pomo-btns { display: flex; gap: 12px; }
-        .pomo-btn {
-            padding: 13px clamp(24px,6vw,44px);
-            font-family: Bookerly, Georgia, serif;
-            font-size: clamp(16px, 3.5vw, 22px);
-            font-weight: bold;
-            border: 2px solid #000;
-            cursor: pointer;
-            letter-spacing: 2px;
-            min-height: 50px;
-        }
-        .pomo-start         { background: #000; color: #fff; }
-        .pomo-start.running { background: #fff; color: #000; }
-        .pomo-reset         { background: #e0e0e0; color: #000; }
-
-        .pomo-settings {
-            width: 100%;
-            max-width: 560px;
-            border: 2px solid #000;
-            padding: 10px 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            background: #fafafa;
-        }
-        .pomo-set-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: clamp(13px, 2.8vw, 17px);
-            min-height: 44px;
-        }
-        .pomo-set-row span:first-child { flex: 1; font-weight: bold; }
-        .pomo-set-row button {
-            width: clamp(36px, 8vw, 46px);
-            height: clamp(36px, 8vw, 46px);
-            font-size: clamp(18px, 4vw, 24px);
-            font-weight: bold;
-            border: 2px solid #000;
-            background: #ececec;
-            cursor: pointer;
-        }
-        .pomo-set-val {
-            font-size: clamp(18px, 4vw, 24px);
-            font-weight: bold;
-            min-width: clamp(28px, 6vw, 40px);
-            text-align: center;
-            display: inline-block;
-        }
-
-        .pomo-log {
-            width: 100%;
-            max-width: 560px;
-            font-size: clamp(11px, 2.3vw, 14px);
-            max-height: 120px;
-            overflow-y: auto;
-            border: 1px solid #000;
-        }
-        .pomo-log-empty {
-            padding: 10px;
-            text-align: center;
-            opacity: 0.5;
-            font-style: italic;
-        }
-        .pomo-log-item {
-            padding: 5px 10px;
-            border-bottom: 1px solid #ddd;
-            display: flex;
-            justify-content: space-between;
-        }
-        .pomo-log-item:last-child { border-bottom: none; }
-
-        /* ── Footer ── */
-        .footer {
-            text-align: center;
-            font-size: clamp(10px, 2vw, 13px);
-            opacity: 0.5;
-            margin-top: 12px;
-            padding-bottom: 10px;
-            border-top: 1px solid #ccc;
-            padding-top: 8px;
-        }
-
-        /* ══════════════════════════════
-           RESPONSIVE
-        ══════════════════════════════ */
-        /* Kindle 600×800 portrait */
-        @media (max-width: 600px) {
-            .tab-btn { font-size: 10px; padding: 8px 2px; }
-            #time    { font-size: 48px; }
-            #bigTime { font-size: 80px; }
-            .weather-temp { font-size: 36px; }
-        }
-        /* Kindle 800×600 landscape */
-        @media (min-width: 601px) and (max-width: 800px) {
-            #time    { font-size: 60px; }
-            #bigTime { font-size: 110px; }
-        }
-        /* Tablet */
-        @media (min-width: 801px) {
-            body { border-left: 1px solid #ddd; border-right: 1px solid #ddd; }
-            #bigTime { font-size: 160px; }
-        }
-        /* Landscape e-ink */
-        @media (orientation: landscape) and (max-height: 640px) {
-            .bigclock-wrap { min-height: 100vh; gap: 6px; }
-            #bigTime { font-size: clamp(60px, 18vw, 120px); }
-            .bigcal td { height: 28px; }
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
+    <script src="quotes.js"></script>
 </head>
 <body>
 
-<!-- ── Tabs ── -->
+<!-- ══ Tabs ══ -->
 <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab(0)">📊 Info</button>
-    <button class="tab-btn"        onclick="switchTab(1)">🕐 Clock</button>
+    <button class="tab-btn"        onclick="switchTab(0)">📊 Info</button>
+    <button class="tab-btn active" onclick="switchTab(1)">🕐 Clock</button>
     <button class="tab-btn"        onclick="switchTab(2)">⏱️ Timer</button>
     <button class="tab-btn"        onclick="switchTab(3)">🔢 Calc</button>
     <button class="tab-btn"        onclick="switchTab(4)">🍅 Pomo</button>
 </div>
 
-<!-- ══════════════ TAB 1: Info ══════════════ -->
-<div id="tab1" class="tab-content active">
+<!-- ══════════ TAB 1: INFO ══════════ -->
+<div id="tab1" class="tab-content">
     <div class="clock">
-        <div id="time">14:35:00</div>
-        <div id="date">2026年02月22日（日）</div>
+        <div id="time">00:00:00</div>
+        <div id="date">----年--月--日（-）</div>
     </div>
     <div class="fx-rate">
         <div>
-            <div class="fx-label">💱 JPY → VND</div>
+            <div class="fx-label">💱 1 JPY → VND</div>
             <div class="fx-time" id="fxtime"></div>
         </div>
         <div class="fx-val" id="fxrate">--- VND</div>
@@ -635,7 +49,7 @@
         </div>
     </div>
     <div class="cal-wrap">
-        <div class="cal-title" id="calTitle">2026年 2月</div>
+        <div class="cal-title" id="calTitle">----年 --月</div>
         <table id="calendar"></table>
     </div>
     <div class="holidays">
@@ -643,17 +57,17 @@
         <div id="holidayList">Đang tải...</div>
     </div>
     <div class="quote">
-        <div class="quote-text"   id="quoteText">Đang tải...</div>
+        <div class="quote-text"   id="quoteText"></div>
         <div class="quote-author" id="quoteAuthor"></div>
     </div>
     <div class="footer">Kindle Dashboard · Saitama · <span id="footerTime"></span></div>
 </div>
 
-<!-- ══════════════ TAB 2: Big Clock ══════════════ -->
-<div id="tab2" class="tab-content">
+<!-- ══════════ TAB 2: BIG CLOCK ══════════ -->
+<div id="tab2" class="tab-content active">
     <div class="bigclock-wrap">
-        <div id="bigTime">14:35</div>
-        <div id="bigDate">2026年02月22日（日）</div>
+        <div id="bigTime">00:00</div>
+        <div id="bigDate">----年--月--日（-）</div>
         <div class="big-holidays" id="bigHolidayList"></div>
         <div class="bigcal"><table id="bigCalendar"></table></div>
         <div class="big-quote">
@@ -663,11 +77,10 @@
     </div>
 </div>
 
-<!-- ══════════════ TAB 3: Timer ══════════════ -->
+<!-- ══════════ TAB 3: TIMER ══════════ -->
 <div id="tab3" class="tab-content">
     <div class="timer-wrap">
 
-        <!-- Stopwatch -->
         <div class="timer-block">
             <div class="timer-label">⏱️ Stopwatch</div>
             <div class="sw-display" id="swDisplay">00:00.0</div>
@@ -679,26 +92,24 @@
             <div class="lap-list" id="lapList"></div>
         </div>
 
-        <!-- Divider -->
-        <div style="width:100%;max-width:560px;border-top:2px solid #000;"></div>
+        <div class="timer-divider"></div>
 
-        <!-- Countdown -->
         <div class="timer-block">
             <div class="timer-label">⏳ Countdown</div>
             <div class="cd-display" id="cdDisplay">05:00</div>
             <div class="cd-inputs">
                 <div class="cd-input-group">
-                    <button class="cd-adj" onclick="cdAdj('m',1)">＋</button>
+                    <button class="cd-adj" onclick="cdAdj('m', 1)">＋</button>
                     <div class="cd-val" id="cdMin">05</div>
                     <div class="cd-unit">分</div>
-                    <button class="cd-adj" onclick="cdAdj('m',-1)">－</button>
+                    <button class="cd-adj" onclick="cdAdj('m', -1)">－</button>
                 </div>
                 <div class="cd-sep">:</div>
                 <div class="cd-input-group">
-                    <button class="cd-adj" onclick="cdAdj('s',10)">＋</button>
+                    <button class="cd-adj" onclick="cdAdj('s', 10)">＋</button>
                     <div class="cd-val" id="cdSec">00</div>
                     <div class="cd-unit">秒</div>
-                    <button class="cd-adj" onclick="cdAdj('s',-10)">－</button>
+                    <button class="cd-adj" onclick="cdAdj('s', -10)">－</button>
                 </div>
             </div>
             <div class="timer-btns">
@@ -711,7 +122,7 @@
     </div>
 </div>
 
-<!-- ══════════════ TAB 4: Calculator ══════════════ -->
+<!-- ══════════ TAB 4: CALCULATOR ══════════ -->
 <div id="tab4" class="tab-content">
     <div class="calc-wrap">
         <div class="calc">
@@ -719,32 +130,43 @@
                 <div class="calc-expr" id="calcExpr"></div>
                 <div class="calc-num"  id="calcNum">0</div>
             </div>
-            <div class="calc-grid">
-                <button class="cb cb-fn"  onclick="calcFn('AC')">AC</button>
-                <button class="cb cb-fn"  onclick="calcFn('+/-')">+/-</button>
-                <button class="cb cb-fn"  onclick="calcFn('%')">%</button>
-                <button class="cb cb-op"  id="op-div" onclick="calcOp('÷')">÷</button>
-                <button class="cb cb-num" onclick="calcNum('7')">7</button>
-                <button class="cb cb-num" onclick="calcNum('8')">8</button>
-                <button class="cb cb-num" onclick="calcNum('9')">9</button>
-                <button class="cb cb-op"  id="op-mul" onclick="calcOp('×')">×</button>
-                <button class="cb cb-num" onclick="calcNum('4')">4</button>
-                <button class="cb cb-num" onclick="calcNum('5')">5</button>
-                <button class="cb cb-num" onclick="calcNum('6')">6</button>
-                <button class="cb cb-op"  id="op-sub" onclick="calcOp('−')">−</button>
-                <button class="cb cb-num" onclick="calcNum('1')">1</button>
-                <button class="cb cb-num" onclick="calcNum('2')">2</button>
-                <button class="cb cb-num" onclick="calcNum('3')">3</button>
-                <button class="cb cb-op"  id="op-add" onclick="calcOp('+')">+</button>
-                <button class="cb cb-num cb-zero" onclick="calcNum('0')">0</button>
-                <button class="cb cb-num" onclick="calcNum('.')">.</button>
-                <button class="cb cb-op"  onclick="calcEqual();">=</button>
-            </div>
+            <!-- TABLE thay CSS Grid — Kindle WebKit safe -->
+            <table class="calc-grid" cellspacing="0" cellpadding="0">
+                <tr class="calc-row">
+                    <td class="cb cb-fn"  onclick="calcFn('AC')">AC</td>
+                    <td class="cb cb-fn"  onclick="calcFn('+/-')">+/-</td>
+                    <td class="cb cb-fn"  onclick="calcFn('%')">%</td>
+                    <td class="cb cb-op"  id="op-div" onclick="calcOp('÷')">÷</td>
+                </tr>
+                <tr class="calc-row">
+                    <td class="cb cb-num" onclick="calcNum('7')">7</td>
+                    <td class="cb cb-num" onclick="calcNum('8')">8</td>
+                    <td class="cb cb-num" onclick="calcNum('9')">9</td>
+                    <td class="cb cb-op"  id="op-mul" onclick="calcOp('×')">×</td>
+                </tr>
+                <tr class="calc-row">
+                    <td class="cb cb-num" onclick="calcNum('4')">4</td>
+                    <td class="cb cb-num" onclick="calcNum('5')">5</td>
+                    <td class="cb cb-num" onclick="calcNum('6')">6</td>
+                    <td class="cb cb-op"  id="op-sub" onclick="calcOp('−')">−</td>
+                </tr>
+                <tr class="calc-row">
+                    <td class="cb cb-num" onclick="calcNum('1')">1</td>
+                    <td class="cb cb-num" onclick="calcNum('2')">2</td>
+                    <td class="cb cb-num" onclick="calcNum('3')">3</td>
+                    <td class="cb cb-op"  id="op-add" onclick="calcOp('+')">+</td>
+                </tr>
+                <tr class="calc-row">
+                    <td class="cb cb-num cb-zero" colspan="2" onclick="calcNum('0')">0</td>
+                    <td class="cb cb-num" onclick="calcNum('.')">.</td>
+                    <td class="cb cb-op"  onclick="calcEqual()">=</td>
+                </tr>
+            </table>
         </div>
     </div>
 </div>
 
-<!-- ══════════════ TAB 5: Pomodoro ══════════════ -->
+<!-- ══════════ TAB 5: POMODORO ══════════ -->
 <div id="tab5" class="tab-content">
     <div class="pomo-wrap">
         <div class="pomo-modes">
@@ -755,37 +177,39 @@
         <div class="pomo-ring-wrap">
             <svg class="pomo-ring" viewBox="0 0 200 200">
                 <circle class="pomo-ring-bg" cx="100" cy="100" r="88"/>
-                <circle class="pomo-ring-fg" id="pomoRingFg" cx="100" cy="100" r="88"
-                    stroke-dasharray="553" stroke-dashoffset="0"/>
+                <circle class="pomo-ring-fg" id="pomoRingFg"
+                    cx="100" cy="100" r="88"
+                    stroke-dasharray="553"
+                    stroke-dashoffset="0"/>
             </svg>
             <div class="pomo-ring-inner">
                 <div class="pomo-time"  id="pomoTime">25:00</div>
                 <div class="pomo-label" id="pomoLabel">Focus</div>
-                <div class="pomo-count">🍅 × <span id="pomoCount">0</span></div>
+                <div class="pomo-count">🍅×<span id="pomoCount">0</span></div>
             </div>
         </div>
         <div class="pomo-btns">
             <button class="pomo-btn pomo-start" id="pomoStartBtn" onclick="pomoToggle()">START</button>
-            <button class="pomo-btn pomo-reset" onclick="pomoReset()">RESET</button>
+            <button class="pomo-btn pomo-reset"                   onclick="pomoReset()">RESET</button>
         </div>
         <div class="pomo-settings">
             <div class="pomo-set-row">
                 <span>🍅 Focus</span>
-                <button onclick="pomoAdjSet('work',-1)">－</button>
-                <span class="pomo-set-val" id="setWork">25</span> 分
-                <button onclick="pomoAdjSet('work',1)">＋</button>
+                <button onclick="pomoAdjSet('work', -1)">－</button>
+                <span class="pomo-set-val" id="setWork">25</span>分
+                <button onclick="pomoAdjSet('work', 1)">＋</button>
             </div>
             <div class="pomo-set-row">
                 <span>☕ Short Break</span>
-                <button onclick="pomoAdjSet('short',-1)">－</button>
-                <span class="pomo-set-val" id="setShort">5</span> 分
-                <button onclick="pomoAdjSet('short',1)">＋</button>
+                <button onclick="pomoAdjSet('short', -1)">－</button>
+                <span class="pomo-set-val" id="setShort">5</span>分
+                <button onclick="pomoAdjSet('short', 1)">＋</button>
             </div>
             <div class="pomo-set-row">
                 <span>🛋️ Long Break</span>
-                <button onclick="pomoAdjSet('long',-1)">－</button>
-                <span class="pomo-set-val" id="setLong">15</span> 分
-                <button onclick="pomoAdjSet('long',1)">＋</button>
+                <button onclick="pomoAdjSet('long', -1)">－</button>
+                <span class="pomo-set-val" id="setLong">15</span>分
+                <button onclick="pomoAdjSet('long', 1)">＋</button>
             </div>
         </div>
         <div class="pomo-log" id="pomoLog">
@@ -794,504 +218,7 @@
     </div>
 </div>
 
-<!-- ══════════════ JavaScript ══════════════ -->
-<script type="text/javascript">
-
-    /* ── Constants ── */
-    var WEEKDAYS      = ['日','月','火','水','木','金','土'];
-    var WEEKDAYS_FULL = ['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'];
-    var JST_OFFSET    = 9 * 60;
-    var holidayDates  = {};
-
-    var WMO = {
-        0:['☀️','Trời quang'],     1:['🌤️','Ít mây'],        2:['⛅','Có mây'],
-        3:['☁️','Nhiều mây'],      45:['🌫️','Sương mù'],     48:['🌫️','Sương đá'],
-        51:['🌦️','Mưa phùn nhẹ'], 53:['🌦️','Mưa phùn'],    55:['🌧️','Mưa phùn dày'],
-        61:['🌧️','Mưa nhẹ'],      63:['🌧️','Mưa vừa'],      65:['🌧️','Mưa to'],
-        71:['🌨️','Tuyết nhẹ'],    73:['🌨️','Tuyết vừa'],    75:['❄️','Tuyết dày'],
-        80:['🌦️','Mưa rào nhẹ'],  81:['🌧️','Mưa rào'],      82:['⛈️','Mưa rào to'],
-        95:['⛈️','Dông bão'],      96:['⛈️','Dông+mưa đá'],  99:['⛈️','Dông lớn']
-    };
-
-    var QUOTES = [
-        ["Nếu bạn thực sự muốn làm điều gì đó, bạn sẽ tìm ra cách. Nếu không, bạn sẽ tìm thấy một cái cớ.", "Jim Rohn"],
-        ["Đừng ngại từ bỏ điều tốt đẹp để đạt được điều vĩ đại.", "John D. Rockefeller"],
-        ["Thành công thường đạt được bởi những người không biết rằng thất bại là không thể tránh khỏi.", "Coco Chanel"],
-        ["Nếu bạn mơ ước được, bạn sẽ làm được.", "Walt Disney"],
-        ["Cách duy nhất để làm công việc tuyệt vời là yêu những gì bạn làm.", "Steve Jobs"],
-        ["Thành công là đi từ thất bại này sang thất bại khác mà không mất đi sự nhiệt tình.", "Winston Churchill"],
-        ["Hành động là chìa khóa nền tảng cho mọi thành công.", "Pablo Picasso"],
-        ["Tôi không thất bại. Tôi chỉ tìm thấy 10,000 cách không hiệu quả.", "Thomas Edison"],
-        ["Tương lai thuộc về những người tin vào vẻ đẹp của giấc mơ mình.", "Eleanor Roosevelt"],
-        ["Bạn không cần phải tuyệt vời để bắt đầu, nhưng bạn phải bắt đầu để trở nên tuyệt vời.", "Zig Ziglar"],
-        ["Đừng chờ đợi. Thời điểm sẽ không bao giờ hoàn hảo.", "Napoleon Hill"],
-        ["Người chiến thắng không bao giờ bỏ cuộc. Người bỏ cuộc không bao giờ chiến thắng.", "Vince Lombardi"],
-        ["Mơ ước lớn. Bắt đầu nhỏ. Nhưng trên hết, hãy bắt đầu.", "Simon Sinek"],
-        ["Thành công không phải là chìa khóa của hạnh phúc. Hạnh phúc là chìa khóa của thành công.", "Albert Schweitzer"],
-        ["Tôi thất bại nhiều lần. Và đó là lý do tôi thành công.", "Michael Jordan"],
-        ["Hãy đầu tư vào bản thân mình. Đó là khoản đầu tư tốt nhất bạn từng thực hiện.", "Robin Sharma"],
-        ["Nếu bạn không xây dựng giấc mơ của mình, ai đó sẽ thuê bạn để xây dựng giấc mơ của họ.", "Tony Gaskins"],
-        ["Thái độ của bạn, chứ không phải năng lực của bạn, sẽ quyết định độ cao của bạn.", "Zig Ziglar"],
-        ["Cơ hội không tự nhiên đến. Bạn tự tạo ra nó.", "Chris Grosser"],
-        ["Sự kiên trì chiến thắng tài năng khi tài năng không kiên trì.", "John Wooden"],
-        ["Hãy cố gắng đừng trở thành người thành công. Thay vào đó hãy trở thành người có giá trị.", "Albert Einstein"],
-        ["Không có bí quyết cho thành công. Đó là kết quả của sự chuẩn bị, làm việc chăm chỉ và học hỏi từ thất bại.", "Colin Powell"],
-        ["Cách tốt nhất để dự đoán tương lai là tự tạo ra nó.", "Peter Drucker"],
-        ["Hãy sống như thể bạn sẽ chết ngày mai. Học như thể bạn sẽ sống mãi mãi.", "Mahatma Gandhi"],
-        ["Đừng đếm ngày. Hãy làm cho mỗi ngày có ý nghĩa.", "Muhammad Ali"],
-        ["Bạn là kiến trúc sư của số phận của chính mình.", "Khuyết danh"],
-        ["Đừng sợ thất bại. Sợ không cố gắng.", "Khuyết danh"],
-        ["Chúng ta tạo ra cuộc sống của mình và chúng ta tạo ra nó mỗi ngày.", "Oprah Winfrey"],
-        ["Bạn càng đam mê điều gì, bạn càng thành công trong điều đó.", "Oprah Winfrey"],
-        ["Cách duy nhất để vượt qua giới hạn là dám vượt qua nó.", "Khuyết danh"]
-    ];
-
-    var selectedQuote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
-
-    /* ── Helpers ── */
-    function pad(n) { return n < 10 ? '0' + n : '' + n; }
-
-    function getJST() {
-        var now = new Date();
-        return new Date(now.getTime() + (now.getTimezoneOffset() + JST_OFFSET) * 60000);
-    }
-
-    function getWMO(code) {
-        if (WMO[code]) return WMO[code];
-        if (code <= 3)  return ['⛅','Có mây'];
-        if (code <= 55) return ['🌦️','Mưa phùn'];
-        if (code <= 65) return ['🌧️','Mưa'];
-        if (code <= 77) return ['🌨️','Tuyết'];
-        if (code <= 82) return ['🌦️','Mưa rào'];
-        return ['⛈️','Dông bão'];
-    }
-
-    /* ── Tab Switch ── */
-    function switchTab(idx) {
-        var tabs = document.querySelectorAll('.tab-content');
-        var btns = document.querySelectorAll('.tab-btn');
-        for (var i = 0; i < tabs.length; i++) {
-            tabs[i].className = i === idx ? 'tab-content active' : 'tab-content';
-            btns[i].className = i === idx ? 'tab-btn active'     : 'tab-btn';
-        }
-    }
-
-    /* ── Clock ── */
-    function updateClock() {
-        var jst = getJST();
-        var h = pad(jst.getHours()), m = pad(jst.getMinutes()), s = pad(jst.getSeconds());
-        var yr = jst.getFullYear(), mo = pad(jst.getMonth()+1), dy = pad(jst.getDate());
-        var wd = WEEKDAYS[jst.getDay()], wdf = WEEKDAYS_FULL[jst.getDay()];
-
-        document.getElementById('time').innerHTML    = h+':'+m+':'+s;
-        document.getElementById('date').innerHTML    = yr+'年'+mo+'月'+dy+'日（'+wd+'）';
-        document.getElementById('bigTime').innerHTML = h+':'+m;
-        document.getElementById('bigDate').innerHTML = yr+'年'+mo+'月'+dy+'日（'+wd+'）';
-        document.getElementById('footerTime').innerHTML = '更新 '+h+':'+m;
-    }
-
-    /* ── Quote ── */
-    function showQuote() {
-        var q = '"' + selectedQuote[0] + '"';
-        var a = '— ' + selectedQuote[1];
-        document.getElementById('quoteText').innerHTML      = q;
-        document.getElementById('quoteAuthor').innerHTML    = a;
-        document.getElementById('bigQuoteText').innerHTML   = q;
-        document.getElementById('bigQuoteAuthor').innerHTML = a;
-    }
-
-    /* ── FX Rate ── */
-    function loadFX() {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET','https://api.exchangerate-api.com/v4/latest/JPY',true);
-        xhr.onload = function() {
-            if (xhr.status !== 200) return;
-            var d = JSON.parse(xhr.responseText);
-            if (!d.rates || !d.rates.VND) return;
-            var rate = Math.round(d.rates.VND * 100) / 100;
-            document.getElementById('fxrate').innerHTML = rate + ' VND';
-            var now = getJST();
-            document.getElementById('fxtime').innerHTML = pad(now.getHours())+':'+pad(now.getMinutes());
-        };
-        xhr.send();
-    }
-
-    /* ── Weather ── */
-    function loadWeather() {
-        var url = 'https://api.open-meteo.com/v1/forecast' +
-            '?latitude=35.6762&longitude=139.6503' +
-            '&current_weather=true&hourly=relativehumidity_2m' +
-            '&timezone=Asia%2FTokyo';
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', url, true);
-        xhr.onload = function() {
-            if (xhr.status === 200) renderWeather(JSON.parse(xhr.responseText));
-            else document.getElementById('wDesc').innerHTML = 'Lỗi API';
-        };
-        xhr.onerror = function() { document.getElementById('wDesc').innerHTML = 'Offline'; };
-        xhr.send();
-    }
-
-    function renderWeather(data) {
-        var cw = data.current_weather;
-        var wmo = getWMO(cw.weathercode);
-        var t = Math.round(cw.temperature);
-        document.getElementById('wTemp').innerHTML = t + '°C';
-        document.getElementById('wIcon').innerHTML = wmo[0];
-        document.getElementById('wDesc').innerHTML = wmo[1];
-        document.getElementById('wWind').innerHTML = Math.round(cw.windspeed) + ' km/h';
-        var hr = getJST().getHours();
-        var hum = (data.hourly && data.hourly.relativehumidity_2m) ? (data.hourly.relativehumidity_2m[hr] || '--') : '--';
-        document.getElementById('wHumidity').innerHTML = hum + '%';
-    }
-
-    /* ── Holidays ── */
-    function loadHolidays() {
-        var year = getJST().getFullYear();
-        var xhrJP = new XMLHttpRequest();
-        xhrJP.open('GET','https://holidays-jp.github.io/api/v1/'+year+'/date.json',true);
-        xhrJP.onload = function() { if (xhrJP.status === 200) displayHolidays(JSON.parse(xhrJP.responseText),'JP'); };
-        xhrJP.send();
-        var xhrVN = new XMLHttpRequest();
-        xhrVN.open('GET','https://date.nager.at/api/v3/PublicHolidays/'+year+'/VN',true);
-        xhrVN.onload = function() { if (xhrVN.status === 200) displayHolidays(JSON.parse(xhrVN.responseText),'VN'); };
-        xhrVN.send();
-    }
-
-    function displayHolidays(data, country) {
-        var mo = getJST().getMonth() + 1;
-        var html = '';
-        if (country === 'JP') {
-            for (var ds in data) {
-                var p = ds.split('-'); var m2 = parseInt(p[1]); var d2 = parseInt(p[2]);
-                if (m2 === mo) { html += '<div class="holiday-item">🇯🇵 '+m2+'/'+d2+' '+data[ds]+'</div>'; holidayDates[d2] = true; }
-            }
-        } else {
-            for (var i = 0; i < data.length; i++) {
-                var p = data[i].date.split('-'); var m2 = parseInt(p[1]); var d2 = parseInt(p[2]);
-                if (m2 === mo) { html += '<div class="holiday-item">🇻🇳 '+m2+'/'+d2+' '+data[i].localName+'</div>'; }
-            }
-        }
-        var el = document.getElementById('holidayList');
-        if (html) el.innerHTML = (el.innerHTML === 'Đang tải...' ? '' : el.innerHTML) + html;
-        else if (el.innerHTML === 'Đang tải...') el.innerHTML = 'Không có ngày lễ';
-        renderCalendar('calendar','cal-wrap',false);
-        renderCalendar('bigCalendar','bigcal',true);
-        renderBigHolidays();
-    }
-
-    function renderBigHolidays() {
-        var src = document.getElementById('holidayList');
-        var el  = document.getElementById('bigHolidayList');
-        if (!src || !el) return;
-        el.innerHTML = src.innerHTML === 'Đang tải...' ? '' : src.innerHTML;
-    }
-
-    /* ── Calendar ── */
-    function renderCalendar(tableId, wrapClass, big) {
-        var jst = getJST();
-        var year = jst.getFullYear(), month = jst.getMonth(), today = jst.getDate();
-        var table = document.getElementById(tableId);
-        if (!table) return;
-        table.innerHTML = '';
-
-        if (tableId === 'calendar') {
-            document.getElementById('calTitle').innerHTML = year + '年 ' + (month+1) + '月';
-        }
-
-        var thead = document.createElement('thead');
-        var hr = document.createElement('tr');
-        for (var i = 0; i < 7; i++) {
-            var th = document.createElement('th');
-            th.innerHTML = WEEKDAYS[i];
-            hr.appendChild(th);
-        }
-        thead.appendChild(hr); table.appendChild(thead);
-
-        var tbody = document.createElement('tbody');
-        var firstDay = new Date(year, month, 1).getDay();
-        var total = new Date(year, month+1, 0).getDate();
-        var row = document.createElement('tr');
-        for (var i = 0; i < firstDay; i++) row.appendChild(document.createElement('td'));
-        for (var d = 1; d <= total; d++) {
-            if ((firstDay + d - 1) % 7 === 0 && d !== 1) { tbody.appendChild(row); row = document.createElement('tr'); }
-            var td = document.createElement('td');
-            td.innerHTML = d;
-            var cls = [];
-            if (d === today) cls.push('today');
-            if (holidayDates[d]) cls.push('holiday');
-            var dow = (firstDay + d - 1) % 7;
-            if (dow === 6) cls.push('sat');
-            if (cls.length) td.className = cls.join(' ');
-            row.appendChild(td);
-        }
-        tbody.appendChild(row); table.appendChild(tbody);
-    }
-
-    /* ══════════════════════════════
-       STOPWATCH
-    ══════════════════════════════ */
-    var swRunning=false, swStart=0, swElapsed=0, swTimer=null, swLaps=[];
-
-    function swToggle() {
-        if (!swRunning) {
-            swStart = Date.now() - swElapsed;
-            swTimer = setInterval(swTick, 100);
-            swRunning = true;
-            document.getElementById('swStartBtn').innerHTML  = 'STOP';
-            document.getElementById('swStartBtn').className = 'tbtn tbtn-main running';
-        } else {
-            clearInterval(swTimer); swElapsed = Date.now() - swStart; swRunning = false;
-            document.getElementById('swStartBtn').innerHTML  = 'START';
-            document.getElementById('swStartBtn').className = 'tbtn tbtn-main';
-        }
-    }
-    function swTick() { swElapsed = Date.now() - swStart; document.getElementById('swDisplay').innerHTML = swFmt(swElapsed); }
-    function swReset() {
-        clearInterval(swTimer); swRunning=false; swElapsed=0; swLaps=[];
-        document.getElementById('swDisplay').innerHTML  = '00:00.0';
-        document.getElementById('swStartBtn').innerHTML = 'START';
-        document.getElementById('swStartBtn').className = 'tbtn tbtn-main';
-        document.getElementById('lapList').innerHTML    = '';
-    }
-    function swLap() {
-        if (!swRunning && swElapsed === 0) return;
-        swLaps.push(swElapsed); renderLaps();
-    }
-    function swFmt(ms) {
-        var t = Math.floor(ms/100);
-        return pad(Math.floor(t/600)) + ':' + pad(Math.floor(t/10)%60) + '.' + (t%10);
-    }
-    function renderLaps() {
-        var splits = swLaps.map(function(v,i){ return i===0?v:v-swLaps[i-1]; });
-        var mn = Math.min.apply(null,splits), mx = Math.max.apply(null,splits);
-        var html = '';
-        for (var i = swLaps.length-1; i >= 0; i--) {
-            var cls = splits.length>1 ? (splits[i]===mn?' fastest':splits[i]===mx?' slowest':'') : '';
-            html += '<div class="lap-item'+cls+'"><span>Lap '+(i+1)+'</span><span>'+swFmt(splits[i])+'</span><span>'+swFmt(swLaps[i])+'</span></div>';
-        }
-        document.getElementById('lapList').innerHTML = html;
-    }
-
-    /* ══════════════════════════════
-       COUNTDOWN
-    ══════════════════════════════ */
-    var cdRunning=false, cdTimer=null, cdMinutes=5, cdSeconds=0, cdRemain=0, cdEndTime=0;
-
-    function cdAdj(unit, val) {
-        if (cdRunning) return;
-        if (unit==='m') cdMinutes = Math.max(0, Math.min(99, cdMinutes+val));
-        else cdSeconds = Math.max(0, Math.min(50, cdSeconds+val));
-        document.getElementById('cdMin').innerHTML = pad(cdMinutes);
-        document.getElementById('cdSec').innerHTML = pad(cdSeconds);
-        cdRemain = (cdMinutes*60+cdSeconds)*1000;
-        cdRefresh(); document.getElementById('cdAlert').innerHTML='';
-    }
-    function cdToggle() {
-        if (!cdRunning) {
-            if (cdRemain<=0) cdRemain=(cdMinutes*60+cdSeconds)*1000;
-            if (cdRemain<=0) return;
-            document.getElementById('cdAlert').innerHTML='';
-            document.getElementById('cdDisplay').className='cd-display';
-            cdEndTime = Date.now()+cdRemain;
-            cdTimer   = setInterval(function(){ cdTick(); }, 250);
-            cdRunning = true;
-            document.getElementById('cdStartBtn').innerHTML  = 'PAUSE';
-            document.getElementById('cdStartBtn').className = 'tbtn tbtn-main running';
-        } else {
-            clearInterval(cdTimer); cdRemain=cdEndTime-Date.now(); cdRunning=false;
-            document.getElementById('cdStartBtn').innerHTML  = 'START';
-            document.getElementById('cdStartBtn').className = 'tbtn tbtn-main';
-        }
-    }
-    function cdTick() {
-        cdRemain = cdEndTime - Date.now();
-        if (cdRemain<=0) {
-            cdRemain=0; clearInterval(cdTimer); cdRunning=false;
-            document.getElementById('cdDisplay').innerHTML  = '00:00';
-            document.getElementById('cdDisplay').className = 'cd-display alert';
-            document.getElementById('cdStartBtn').innerHTML = 'START';
-            document.getElementById('cdStartBtn').className = 'tbtn tbtn-main';
-            document.getElementById('cdAlert').innerHTML   = '🔔 Hết giờ!';
-            return;
-        }
-        cdRefresh();
-    }
-    function cdRefresh() {
-        var t=Math.ceil(cdRemain/1000);
-        document.getElementById('cdDisplay').innerHTML = pad(Math.floor(t/60))+':'+pad(t%60);
-    }
-    function cdReset() {
-        clearInterval(cdTimer); cdRunning=false;
-        cdRemain=(cdMinutes*60+cdSeconds)*1000;
-        document.getElementById('cdDisplay').innerHTML  = pad(cdMinutes)+':'+pad(cdSeconds);
-        document.getElementById('cdDisplay').className = 'cd-display';
-        document.getElementById('cdStartBtn').innerHTML = 'START';
-        document.getElementById('cdStartBtn').className = 'tbtn tbtn-main';
-        document.getElementById('cdAlert').innerHTML   = '';
-    }
-    cdRemain = (cdMinutes*60+cdSeconds)*1000;
-
-    /* ══════════════════════════════
-       CALCULATOR
-    ══════════════════════════════ */
-    var cCur='0', cPrev='', cOp='', cNew=true, cRes=false;
-
-    function calcDisplay() {
-        var el=document.getElementById('calcNum'); el.innerHTML=cCur;
-        var l=cCur.replace('-','').length;
-        el.className='calc-num'+(l>9?' xsmall':l>6?' small':'');
-    }
-    function calcNum(v) {
-        if (cRes && v!=='.') { cCur='0'; cRes=false; }
-        if (v==='.') {
-            if (cNew) { cCur='0.'; cNew=false; return calcDisplay(); }
-            if (cCur.indexOf('.')!==-1) return;
-            cCur+='.'; return calcDisplay();
-        }
-        if (cNew) { cCur=v; cNew=false; }
-        else { cCur=cCur==='0'?v:cCur+v; }
-        if (cCur.replace('-','').length>12) return;
-        calcDisplay();
-    }
-    function calcOp(op) {
-        if (cOp && !cNew) calcEqual(true);
-        cPrev=cCur; cOp=op; cNew=true; cRes=false;
-        var ids={'÷':'op-div','×':'op-mul','−':'op-sub','+':'op-add'};
-        document.querySelectorAll('.cb-op').forEach(function(b){ b.className='cb cb-op'; });
-        if (ids[op]) document.getElementById(ids[op]).className='cb cb-op active';
-        document.getElementById('calcExpr').innerHTML=cPrev+' '+op;
-    }
-    function calcEqual(chain) {
-        if (!cOp) return;
-        var a=parseFloat(cPrev), b=parseFloat(cCur), r;
-        if (cOp==='÷') r=b!==0?a/b:'Error';
-        if (cOp==='×') r=a*b;
-        if (cOp==='−') r=a-b;
-        if (cOp==='+') r=a+b;
-        if (!chain) {
-            document.getElementById('calcExpr').innerHTML=cPrev+' '+cOp+' '+cCur+' =';
-            cOp='';
-            document.querySelectorAll('.cb-op').forEach(function(b){ b.className='cb cb-op'; });
-        }
-        if (r==='Error') { cCur='Error'; }
-        else { var s=parseFloat(r.toFixed(10)).toString(); cCur=s.length>12?parseFloat(r.toPrecision(8)).toString():s; }
-        cPrev=cCur; cNew=true; cRes=!chain; calcDisplay();
-    }
-    function calcFn(fn) {
-        var n=parseFloat(cCur);
-        if (fn==='AC') {
-            cCur='0'; cPrev=''; cOp=''; cNew=true; cRes=false;
-            document.getElementById('calcExpr').innerHTML='';
-            document.querySelectorAll('.cb-op').forEach(function(b){ b.className='cb cb-op'; });
-        }
-        if (fn==='+/-') { cCur=(n*-1).toString(); cRes=false; }
-        if (fn==='%')   { cCur=(n/100).toString(); cRes=false; }
-        calcDisplay();
-    }
-
-    /* ══════════════════════════════
-       POMODORO
-    ══════════════════════════════ */
-    var POMO_SETS   = { work:25, short:5, long:15 };
-    var POMO_LABELS = { work:'Focus', short:'Short Break', long:'Long Break' };
-    var pomoMode='work', pomoRunning=false, pomoTimer=null;
-    var pomoRemain=0, pomoTotal=0, pomoEndTime=0, pomoCount=0;
-    var POMO_C = 2 * Math.PI * 88; // ≈ 553
-
-    function pomoSetMode(mode) {
-        if (pomoRunning) return;
-        pomoMode  = mode;
-        pomoTotal = POMO_SETS[mode]*60*1000;
-        pomoRemain= pomoTotal;
-        var map={work:'modeWork',short:'modeShort',long:'modeLong'};
-        document.querySelectorAll('.pomo-mode-btn').forEach(function(b){ b.className='pomo-mode-btn'; });
-        document.getElementById(map[mode]).className='pomo-mode-btn active';
-        var fg=document.getElementById('pomoRingFg');
-        fg.className='pomo-ring-fg'+(mode==='work'?'':' break');
-        document.getElementById('pomoLabel').innerHTML=POMO_LABELS[mode];
-        pomoRefresh();
-    }
-    function pomoToggle() {
-        if (!pomoRunning) {
-            pomoEndTime=Date.now()+pomoRemain;
-            pomoTimer=setInterval(pomoTick,500);
-            pomoRunning=true;
-            document.getElementById('pomoStartBtn').innerHTML  ='PAUSE';
-            document.getElementById('pomoStartBtn').className ='pomo-btn pomo-start running';
-        } else {
-            clearInterval(pomoTimer); pomoRemain=pomoEndTime-Date.now(); pomoRunning=false;
-            document.getElementById('pomoStartBtn').innerHTML  ='START';
-            document.getElementById('pomoStartBtn').className ='pomo-btn pomo-start';
-        }
-    }
-    function pomoTick() {
-        pomoRemain=pomoEndTime-Date.now();
-        if (pomoRemain<=0) {
-            pomoRemain=0; clearInterval(pomoTimer); pomoRunning=false;
-            document.getElementById('pomoStartBtn').innerHTML  ='START';
-            document.getElementById('pomoStartBtn').className ='pomo-btn pomo-start';
-            pomoRefresh(); pomoOnComplete(); return;
-        }
-        pomoRefresh();
-    }
-    function pomoRefresh() {
-        var t=Math.ceil(pomoRemain/1000);
-        document.getElementById('pomoTime').innerHTML=pad(Math.floor(t/60))+':'+pad(t%60);
-        var pct = pomoTotal>0 ? pomoRemain/pomoTotal : 0;
-        var fg=document.getElementById('pomoRingFg');
-        fg.style.strokeDasharray  = POMO_C;
-        fg.style.strokeDashoffset = POMO_C*(1-pct);
-    }
-    function pomoOnComplete() {
-        var now=getJST();
-        var time=pad(now.getHours())+':'+pad(now.getMinutes());
-        var icon=pomoMode==='work'?'🍅':pomoMode==='short'?'☕':'🛋️';
-        var log=document.getElementById('pomoLog');
-        var empty=log.querySelector('.pomo-log-empty');
-        if (empty) empty.remove();
-        log.innerHTML='<div class="pomo-log-item"><span>'+icon+' '+POMO_LABELS[pomoMode]+'</span><span>'+time+'</span></div>'+log.innerHTML;
-        if (pomoMode==='work') {
-            pomoCount++;
-            document.getElementById('pomoCount').innerHTML=pomoCount;
-            pomoSetMode(pomoCount%4===0?'long':'short');
-        } else { pomoSetMode('work'); }
-    }
-    function pomoReset() {
-        clearInterval(pomoTimer); pomoRunning=false;
-        pomoRemain=POMO_SETS[pomoMode]*60*1000;
-        pomoTotal=pomoRemain;
-        document.getElementById('pomoStartBtn').innerHTML  ='START';
-        document.getElementById('pomoStartBtn').className ='pomo-btn pomo-start';
-        pomoRefresh();
-    }
-    function pomoAdjSet(mode,val) {
-        if (pomoRunning) return;
-        POMO_SETS[mode]=Math.max(1,Math.min(60,POMO_SETS[mode]+val));
-        var ids={work:'setWork',short:'setShort',long:'setLong'};
-        document.getElementById(ids[mode]).innerHTML=POMO_SETS[mode];
-        if (mode===pomoMode) { pomoTotal=POMO_SETS[mode]*60*1000; pomoRemain=pomoTotal; pomoRefresh(); }
-    }
-
-    /* ── Init ── */
-    updateClock();
-    renderCalendar('calendar','cal-wrap',false);
-    renderCalendar('bigCalendar','bigcal',true);
-    showQuote();
-    loadFX();
-    loadWeather();
-    loadHolidays();
-    pomoRefresh();
-
-    setInterval(updateClock, 1000);
-    setInterval(loadFX,      15*60*1000);
-    setInterval(loadWeather, 30*60*1000);
-
-    // Reload bypass cache mỗi 10 phút
-    setInterval(function(){
-        window.location.href = window.location.href.split('?')[0]+'?t='+Date.now();
-    }, 10*60*1000);
-
-</script>
+<!-- app.js load sau cùng — quotes.js phải load trước -->
+<script src="app.js"></script>
 </body>
 </html>

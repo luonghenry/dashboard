@@ -1,0 +1,36 @@
+// ══════════════════════════════
+//  QUOTES — chỉ sửa file này để update danh ngôn
+//  Format: ["Nội dung.", "Tác giả"],
+// ══════════════════════════════
+var QUOTES = [
+    ["Nếu bạn thực sự muốn làm điều gì đó, bạn sẽ tìm ra cách. Nếu không, bạn sẽ tìm thấy một cái cớ.", "Jim Rohn"],
+    ["Đừng ngại từ bỏ điều tốt đẹp để đạt được điều vĩ đại.", "John D. Rockefeller"],
+    ["Thành công thường đạt được bởi những người không biết rằng thất bại là không thể tránh khỏi.", "Coco Chanel"],
+    ["Nếu bạn mơ ước được, bạn sẽ làm được.", "Walt Disney"],
+    ["Cách duy nhất để làm công việc tuyệt vời là yêu những gì bạn làm.", "Steve Jobs"],
+    ["Thành công là đi từ thất bại này sang thất bại khác mà không mất đi sự nhiệt tình.", "Winston Churchill"],
+    ["Hành động là chìa khóa nền tảng cho mọi thành công.", "Pablo Picasso"],
+    ["Tôi không thất bại. Tôi chỉ tìm thấy 10,000 cách không hiệu quả.", "Thomas Edison"],
+    ["Tương lai thuộc về những người tin vào vẻ đẹp của giấc mơ mình.", "Eleanor Roosevelt"],
+    ["Bạn không cần phải tuyệt vời để bắt đầu, nhưng bạn phải bắt đầu để trở nên tuyệt vời.", "Zig Ziglar"],
+    ["Đừng chờ đợi. Thời điểm sẽ không bao giờ hoàn hảo.", "Napoleon Hill"],
+    ["Người chiến thắng không bao giờ bỏ cuộc. Người bỏ cuộc không bao giờ chiến thắng.", "Vince Lombardi"],
+    ["Mơ ước lớn. Bắt đầu nhỏ. Nhưng trên hết, hãy bắt đầu.", "Simon Sinek"],
+    ["Thành công không phải là chìa khóa của hạnh phúc. Hạnh phúc là chìa khóa của thành công.", "Albert Schweitzer"],
+    ["Tôi thất bại nhiều lần. Và đó là lý do tôi thành công.", "Michael Jordan"],
+    ["Hãy đầu tư vào bản thân mình. Đó là khoản đầu tư tốt nhất bạn từng thực hiện.", "Robin Sharma"],
+    ["Nếu bạn không xây dựng giấc mơ của mình, ai đó sẽ thuê bạn để xây dựng giấc mơ của họ.", "Tony Gaskins"],
+    ["Thái độ của bạn, chứ không phải năng lực của bạn, sẽ quyết định độ cao của bạn.", "Zig Ziglar"],
+    ["Cơ hội không tự nhiên đến. Bạn tự tạo ra nó.", "Chris Grosser"],
+    ["Sự kiên trì chiến thắng tài năng khi tài năng không kiên trì.", "John Wooden"],
+    ["Hãy cố gắng đừng trở thành người thành công. Thay vào đó hãy trở thành người có giá trị.", "Albert Einstein"],
+    ["Không có bí quyết cho thành công. Đó là kết quả của sự chuẩn bị, làm việc chăm chỉ và học hỏi từ thất bại.", "Colin Powell"],
+    ["Cách tốt nhất để dự đoán tương lai là tự tạo ra nó.", "Peter Drucker"],
+    ["Hãy sống như thể bạn sẽ chết ngày mai. Học như thể bạn sẽ sống mãi mãi.", "Mahatma Gandhi"],
+    ["Đừng đếm ngày. Hãy làm cho mỗi ngày có ý nghĩa.", "Muhammad Ali"],
+    ["Bạn là kiến trúc sư của số phận của chính mình.", "Khuyết danh"],
+    ["Đừng sợ thất bại. Sợ không cố gắng.", "Khuyết danh"],
+    ["Chúng ta tạo ra cuộc sống của mình và chúng ta tạo ra nó mỗi ngày.", "Oprah Winfrey"],
+    ["Bạn càng đam mê điều gì, bạn càng thành công trong điều đó.", "Oprah Winfrey"],
+    ["Cách duy nhất để vượt qua giới hạn là dám vượt qua nó.", "Khuyết danh"]
+];
