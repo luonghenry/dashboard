@@ -1,11 +1,19 @@
 /* ══════════════════════════════════════════════
-   Kindle Dashboard — app.js  v1.2
+   Kindle Dashboard — app.js  v1.3
    ES5 only — Kindle 8 / WebKit 531-534
    - Offline: AppCache + localStorage fallback
+   - Cache version control: đổi CACHE_VERSION để clear
    - Holidays: buffer JP+VN, render 1 lần, no-duplicate
    - Không auto-reload trang (tiết kiệm pin)
    - API chỉ gọi khi online, mỗi 30 phút
 ══════════════════════════════════════════════ */
+
+/* ══════════════════════════════
+   CACHE VERSION
+   Đổi số này để clear toàn bộ
+   localStorage và fetch lại API
+══════════════════════════════ */
+var CACHE_VERSION = '1.3';
 
 /* ── Constants ── */
 var WEEKDAYS   = ['日','月','火','水','木','金','土'];
@@ -45,9 +53,9 @@ var WMO = {
 /* ══════════════════════════════
    HELPERS
 ══════════════════════════════ */
-function pad(n)       { return n < 10 ? '0' + n : '' + n; }
-function byId(id)     { return document.getElementById(id); }
-function setHtml(id, h) { var el = byId(id); if (el) el.innerHTML = h; }
+function pad(n)        { return n < 10 ? '0' + n : '' + n; }
+function byId(id)      { return document.getElementById(id); }
+function setHtml(id,h) { var el = byId(id); if (el) el.innerHTML = h; }
 
 function qsa(sel) {
     var nl = document.querySelectorAll(sel), arr = [];
@@ -77,8 +85,45 @@ function lsSet(key, val) {
     try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
 }
 function lsGet(key) {
-    try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : null; }
-    catch(e) { return null; }
+    try {
+        var v = localStorage.getItem(key);
+        return v ? JSON.parse(v) : null;
+    } catch(e) { return null; }
+}
+
+/* ══════════════════════════════
+   CACHE VERSION CONTROL
+   Xóa data cũ nếu version thay đổi
+══════════════════════════════ */
+function checkCacheVersion() {
+    var saved = lsGet('cache_version');
+    if (!saved || saved !== CACHE_VERSION) {
+        try {
+            localStorage.removeItem('fx_data');
+            localStorage.removeItem('weather_data');
+            localStorage.removeItem('holiday_data');
+        } catch(e) {}
+        lsSet('cache_version', CACHE_VERSION);
+    }
+}
+
+/* ══════════════════════════════
+   APPCACHE AUTO-UPDATE
+══════════════════════════════ */
+function initAppCache() {
+    if (!window.applicationCache) return;
+    var ac = window.applicationCache;
+
+    ac.addEventListener('updateready', function() {
+        if (ac.status === ac.UPDATEREADY) {
+            try { ac.swapCache(); } catch(e) {}
+            window.location.reload();
+        }
+    }, false);
+
+    if (IS_ONLINE) {
+        try { ac.update(); } catch(e) {}
+    }
 }
 
 /* ══════════════════════════════
@@ -105,7 +150,14 @@ function pingCheck() {
         var wasOnline = IS_ONLINE;
         IS_ONLINE = (xhr.status > 0 && xhr.status < 500);
         updateStatusBar();
-        if (!wasOnline && IS_ONLINE) { loadFX(); loadWeather(); }
+        if (!wasOnline && IS_ONLINE) {
+            loadFX();
+            loadWeather();
+            loadHolidays();
+            if (window.applicationCache) {
+                try { window.applicationCache.update(); } catch(e) {}
+            }
+        }
     };
     xhr.ontimeout = function() { IS_ONLINE = false; updateStatusBar(); };
     xhr.onerror   = function() { IS_ONLINE = false; updateStatusBar(); };
@@ -159,6 +211,8 @@ function showQuote() {
 
 /* ══════════════════════════════
    FX RATE
+   Online  → gọi API, lưu localStorage
+   Offline → đọc localStorage
 ══════════════════════════════ */
 function loadFX() {
     var cached = lsGet('fx_data');
@@ -177,7 +231,7 @@ function loadFX() {
         if (xhr.readyState !== 4) return;
         if (xhr.status === 200) {
             try {
-                var d    = JSON.parse(xhr.responseText);
+                var d = JSON.parse(xhr.responseText);
                 if (!d.rates || !d.rates.VND) return;
                 var rate = Math.round(d.rates.VND * 100) / 100;
                 var t    = getJST();
@@ -186,7 +240,9 @@ function loadFX() {
                 setHtml('fxtime', time);
                 lsSet('fx_data', { rate: rate, time: time });
             } catch(e) {}
-        } else { IS_ONLINE = false; updateStatusBar(); }
+        } else {
+            IS_ONLINE = false; updateStatusBar();
+        }
     };
     xhr.onerror   = function() { IS_ONLINE = false; updateStatusBar(); };
     xhr.ontimeout = function() { IS_ONLINE = false; updateStatusBar(); };
@@ -195,6 +251,8 @@ function loadFX() {
 
 /* ══════════════════════════════
    WEATHER
+   Online  → gọi API, lưu localStorage
+   Offline → đọc localStorage
 ══════════════════════════════ */
 function loadWeather() {
     var cached = lsGet('weather_data');
@@ -221,7 +279,9 @@ function loadWeather() {
         if (xhr.readyState !== 4) return;
         if (xhr.status === 200) {
             try { renderWeather(JSON.parse(xhr.responseText)); } catch(e) {}
-        } else { IS_ONLINE = false; updateStatusBar(); }
+        } else {
+            IS_ONLINE = false; updateStatusBar();
+        }
     };
     xhr.onerror   = function() { IS_ONLINE = false; updateStatusBar(); };
     xhr.ontimeout = function() { IS_ONLINE = false; updateStatusBar(); };
@@ -246,8 +306,9 @@ function renderWeather(data) {
 }
 
 /* ══════════════════════════════
-   HOLIDAYS — no-duplicate fix
-   Buffer JP + VN, render 1 lần duy nhất
+   HOLIDAYS
+   Buffer JP + VN → render 1 lần
+   Không append → không duplicate
 ══════════════════════════════ */
 function loadHolidays() {
     /* Reset hoàn toàn mỗi lần gọi */
@@ -279,7 +340,7 @@ function loadHolidays() {
     x1.onreadystatechange = function() {
         if (x1.readyState !== 4) return;
         holidayBuffer.JP = (x1.status === 200)
-            ? parseHolidaysJP(JSON.parse(x1.responseText))
+            ? (function() { try { return parseHolidaysJP(JSON.parse(x1.responseText)); } catch(e) { return []; } })()
             : [];
         tryRenderHolidays();
     };
@@ -293,7 +354,7 @@ function loadHolidays() {
     x2.onreadystatechange = function() {
         if (x2.readyState !== 4) return;
         holidayBuffer.VN = (x2.status === 200)
-            ? parseHolidaysVN(JSON.parse(x2.responseText))
+            ? (function() { try { return parseHolidaysVN(JSON.parse(x2.responseText)); } catch(e) { return []; } })()
             : [];
         tryRenderHolidays();
     };
@@ -309,7 +370,7 @@ function parseHolidaysJP(data) {
         var m2 = parseInt(p[1], 10);
         var d2 = parseInt(p[2], 10);
         if (m2 === mo) {
-            results.push({ day: d2, label: '🇯🇵 ' + m2 + '/' + d2 + ' ' + data[ds] });
+            results.push({ day: d2, label: '祝日　' + m2 + '/' + d2 + ' ' + data[ds] });
             holidayDates[d2] = true;
         }
     }
@@ -329,22 +390,22 @@ function parseHolidaysVN(data) {
     return results;
 }
 
-/* Chờ cả 2 API xong mới render — tránh append trùng */
+/* Chỉ render khi cả 2 API xong */
 function tryRenderHolidays() {
     if (holidayBuffer.JP === null || holidayBuffer.VN === null) return;
 
-    var all = [];
-    for (var i = 0; i < holidayBuffer.JP.length; i++) all.push(holidayBuffer.JP[i]);
-    for (var i = 0; i < holidayBuffer.VN.length; i++) all.push(holidayBuffer.VN[i]);
+    var all = [], i;
+    for (i = 0; i < holidayBuffer.JP.length; i++) all.push(holidayBuffer.JP[i]);
+    for (i = 0; i < holidayBuffer.VN.length; i++) all.push(holidayBuffer.VN[i]);
     all.sort(function(a, b) { return a.day - b.day; });
 
     var html = '';
-    for (var i = 0; i < all.length; i++) {
+    for (i = 0; i < all.length; i++) {
         html += '<div class="holiday-item">' + all[i].label + '</div>';
     }
     if (!html) html = '<div class="holiday-item">Không có ngày lễ</div>';
 
-    /* SET (không append) */
+    /* SET — không append */
     setHtml('holidayList',    html);
     setHtml('bigHolidayList', html);
 
@@ -394,9 +455,9 @@ function buildCal(tableId) {
         var cell = document.createElement('td');
         cell.innerHTML = d;
         var cls = [];
-        if (d === today)             cls.push('today');
-        if (holidayDates[d])         cls.push('holiday');
-        if ((fd + d - 1) % 7 === 6) cls.push('sat');
+        if (d === today)              cls.push('today');
+        if (holidayDates[d])          cls.push('holiday');
+        if ((fd + d - 1) % 7 === 6)  cls.push('sat');
         if (cls.length) cell.className = cls.join(' ');
         row.appendChild(cell);
     }
@@ -411,8 +472,8 @@ var swRunning = false, swStart = 0, swElapsed = 0, swTimer = null, swLaps = [];
 
 function swToggle() {
     if (!swRunning) {
-        swStart = Date.now() - swElapsed;
-        swTimer = setInterval(swTick, 100);
+        swStart   = Date.now() - swElapsed;
+        swTimer   = setInterval(swTick, 100);
         swRunning = true;
         byId('swStartBtn').innerHTML = 'STOP';
         byId('swStartBtn').className = 'tbtn tbtn-main running';
@@ -427,7 +488,8 @@ function swToggle() {
 function swTick()  { swElapsed = Date.now() - swStart; setHtml('swDisplay', swFmt(swElapsed)); }
 function swReset() {
     clearInterval(swTimer); swRunning = false; swElapsed = 0; swLaps = [];
-    setHtml('swDisplay', '00:00.0'); setHtml('lapList', '');
+    setHtml('swDisplay', '00:00.0');
+    setHtml('lapList',   '');
     byId('swStartBtn').innerHTML = 'START';
     byId('swStartBtn').className = 'tbtn tbtn-main';
 }
@@ -437,13 +499,17 @@ function swFmt(ms) {
     return pad(Math.floor(t / 600)) + ':' + pad(Math.floor(t / 10) % 60) + '.' + (t % 10);
 }
 function renderLaps() {
-    var sp = [], mn, mx, html = '', i;
+    var sp = [], mn, mx, html = '', i, c;
     for (i = 0; i < swLaps.length; i++) sp.push(i === 0 ? swLaps[i] : swLaps[i] - swLaps[i-1]);
     mn = sp[0]; mx = sp[0];
     for (i = 1; i < sp.length; i++) { if (sp[i] < mn) mn = sp[i]; if (sp[i] > mx) mx = sp[i]; }
     for (i = swLaps.length - 1; i >= 0; i--) {
-        var c = sp.length > 1 ? (sp[i] === mn ? ' fastest' : sp[i] === mx ? ' slowest' : '') : '';
-        html += '<div class="lap-item' + c + '"><span>Lap ' + (i+1) + '</span><span>' + swFmt(sp[i]) + '</span><span>' + swFmt(swLaps[i]) + '</span></div>';
+        c = sp.length > 1 ? (sp[i] === mn ? ' fastest' : sp[i] === mx ? ' slowest' : '') : '';
+        html += '<div class="lap-item' + c + '">'
+              + '<span>Lap ' + (i+1) + '</span>'
+              + '<span>' + swFmt(sp[i]) + '</span>'
+              + '<span>' + swFmt(swLaps[i]) + '</span>'
+              + '</div>';
     }
     setHtml('lapList', html);
 }
@@ -451,7 +517,8 @@ function renderLaps() {
 /* ══════════════════════════════
    COUNTDOWN
 ══════════════════════════════ */
-var cdRunning = false, cdTimer = null, cdMinutes = 5, cdSeconds = 0, cdRemain = 0, cdEnd = 0;
+var cdRunning = false, cdTimer = null;
+var cdMinutes = 5, cdSeconds = 0, cdRemain = 0, cdEnd = 0;
 
 function cdAdj(u, v) {
     if (cdRunning) return;
@@ -470,14 +537,14 @@ function cdToggle() {
         if (cdRemain <= 0) return;
         byId('cdAlert').innerHTML   = '';
         byId('cdDisplay').className = 'cd-display';
-        cdEnd = Date.now() + cdRemain;
-        cdTimer = setInterval(cdTick, 250);
+        cdEnd     = Date.now() + cdRemain;
+        cdTimer   = setInterval(cdTick, 250);
         cdRunning = true;
         byId('cdStartBtn').innerHTML = 'PAUSE';
         byId('cdStartBtn').className = 'tbtn tbtn-main running';
     } else {
         clearInterval(cdTimer);
-        cdRemain = cdEnd - Date.now();
+        cdRemain  = cdEnd - Date.now();
         cdRunning = false;
         byId('cdStartBtn').innerHTML = 'START';
         byId('cdStartBtn').className = 'tbtn tbtn-main';
@@ -589,7 +656,7 @@ var PC = 2 * Math.PI * 88;
 function pomoSetMode(m) {
     if (pRun) return;
     pMode = m; pTotal = PS[m] * 60 * 1000; pRemain = pTotal;
-    var mmap = { work: 'modeWork', short: 'modeShort', long: 'modeLong' };
+    var mmap  = { work: 'modeWork', short: 'modeShort', long: 'modeLong' };
     var mbtns = qsa('.pomo-mode-btn');
     for (var i = 0; i < mbtns.length; i++) mbtns[i].className = 'pomo-mode-btn';
     byId(mmap[m]).className      = 'pomo-mode-btn active';
@@ -649,48 +716,72 @@ function pomoDone() {
     var log  = byId('pomoLog');
     var empty = log.querySelector('.pomo-log-empty');
     if (empty) empty.parentNode.removeChild(empty);
-    log.innerHTML = '<div class="pomo-log-item"><span>' + icon + ' ' + PL[pMode] + '</span><span>' + time + '</span></div>' + log.innerHTML;
+    log.innerHTML = '<div class="pomo-log-item">'
+                  + '<span>' + icon + ' ' + PL[pMode] + '</span>'
+                  + '<span>' + time + '</span>'
+                  + '</div>' + log.innerHTML;
     if (pMode === 'work') {
         pCount++; setHtml('pomoCount', pCount);
         pomoSetMode(pCount % 4 === 0 ? 'long' : 'short');
-    } else { pomoSetMode('work'); }
+    } else {
+        pomoSetMode('work');
+    }
 }
 
 /* ══════════════════════════════
    INIT
 ══════════════════════════════ */
 function init() {
-    cdRemain = (cdMinutes * 60 + cdSeconds) * 1000;
+    /* 1. Clear cache nếu version thay đổi */
+    checkCacheVersion();
 
+    /* 2. AppCache auto-update */
+    initAppCache();
+
+    /* 3. Detect online/offline */
     if (typeof navigator.onLine !== 'undefined') IS_ONLINE = navigator.onLine;
     updateStatusBar();
 
+    /* 4. Khởi tạo UI */
+    cdRemain = (cdMinutes * 60 + cdSeconds) * 1000;
     updateClock();
     buildCal('calendar');
     buildCal('bigCalendar');
     showQuote();
+
+    /* 5. Load data API */
     loadFX();
     loadWeather();
     loadHolidays();
     pomoRefresh();
 
+    /* 6. Timers */
     setInterval(updateClock, 1000);
     setInterval(pingCheck,   2 * 60 * 1000);
     setInterval(function() {
         if (IS_ONLINE) { loadFX(); loadWeather(); }
     }, 30 * 60 * 1000);
 
+    /* 7. Native online/offline events */
     if (window.addEventListener) {
-        window.addEventListener('online',  function() {
-            IS_ONLINE = true; updateStatusBar();
-            loadFX(); loadWeather(); loadHolidays();
+        window.addEventListener('online', function() {
+            IS_ONLINE = true;
+            updateStatusBar();
+            loadFX();
+            loadWeather();
+            loadHolidays();
+            if (window.applicationCache) {
+                try { window.applicationCache.update(); } catch(e) {}
+            }
         });
         window.addEventListener('offline', function() {
-            IS_ONLINE = false; updateStatusBar();
+            IS_ONLINE = false;
+            updateStatusBar();
         });
     }
 }
 
+/* Chờ DOM load xong */
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else {
