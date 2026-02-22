@@ -11,7 +11,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Bookerly', monospace;
+            font-family: 'Courier New', monospace;
             background: #fff;
             color: #000;
             width: 100vw;
@@ -31,12 +31,12 @@
         }
         .tab-btn {
             flex: 1;
-            padding: clamp(8px,2vw,12px);
+            padding: clamp(6px,1.5vw,10px);
             background: #e0e0e0;
             border: none;
             border-right: 2px solid #000;
             font-family: 'Courier New', monospace;
-            font-size: clamp(11px,2.2vw,15px);
+            font-size: clamp(10px,1.9vw,13px);
             font-weight: bold;
             cursor: pointer;
             white-space: nowrap;
@@ -212,8 +212,6 @@
         }
         .bigcal td.today { background: #000; color: #fff; font-weight: bold; border: 2px solid #000; }
         .bigcal td.holiday { color: #c00; font-weight: bold; }
-
-        /* ── Quote (Tab 4) ── */
         .big-quote {
             width: 100%;
             max-width: 560px;
@@ -223,24 +221,125 @@
             font-style: italic;
             line-height: 1.6;
         }
-        .big-quote-text {
-            font-size: clamp(13px,2.8vw,18px);
-            margin-bottom: clamp(6px,1.5vw,10px);
+        .big-quote-text { font-size: clamp(13px,2.8vw,18px); margin-bottom: clamp(6px,1.5vw,10px); }
+        .big-quote-author { font-size: clamp(12px,2.5vw,15px); text-align: right; font-style: normal; font-weight: bold; opacity: 0.7; }
+
+        /* ── Tab 5: Timer ── */
+        .timer-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(16px,4vw,30px);
+            padding: clamp(10px,3vw,20px) 0;
+            align-items: center;
         }
-        .big-quote-author {
-            font-size: clamp(12px,2.5vw,15px);
-            text-align: right;
-            font-style: normal;
+        .timer-block { width: 100%; max-width: 480px; text-align: center; }
+        .timer-label { font-size: clamp(14px,3vw,20px); font-weight: bold; margin-bottom: clamp(6px,2vw,12px); letter-spacing: 2px; }
+        .timer-divider { width: 100%; max-width: 480px; border-top: 2px solid #000; }
+        .sw-display {
+            font-size: clamp(52px,14vw,96px);
             font-weight: bold;
-            opacity: 0.7;
+            letter-spacing: clamp(2px,1vw,6px);
+            line-height: 1;
+            margin-bottom: clamp(12px,3vw,20px);
+            font-variant-numeric: tabular-nums;
         }
+        .cd-display {
+            font-size: clamp(52px,14vw,96px);
+            font-weight: bold;
+            letter-spacing: clamp(2px,1vw,6px);
+            line-height: 1;
+            margin-bottom: clamp(10px,2vw,16px);
+            font-variant-numeric: tabular-nums;
+        }
+        .cd-display.alert { animation: blink 0.5s step-end infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+        .timer-btns { display: flex; justify-content: center; gap: clamp(8px,2vw,16px); margin-bottom: clamp(10px,2vw,14px); }
+        .tbtn {
+            padding: clamp(10px,2.5vw,16px) clamp(16px,4vw,28px);
+            font-family: 'Courier New', monospace;
+            font-size: clamp(14px,3vw,18px);
+            font-weight: bold;
+            border: 2px solid #000;
+            cursor: pointer;
+            min-width: clamp(72px,18vw,110px);
+        }
+        .tbtn-main { background: #000; color: #fff; }
+        .tbtn-main.running { background: #fff; color: #000; }
+        .tbtn-sub { background: #e0e0e0; color: #000; }
+        .cd-inputs { display: flex; justify-content: center; align-items: center; gap: clamp(6px,2vw,14px); margin-bottom: clamp(10px,2vw,16px); }
+        .cd-input-group { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .cd-adj {
+            width: clamp(36px,9vw,52px);
+            height: clamp(32px,7vw,44px);
+            font-size: clamp(16px,3.5vw,22px);
+            font-weight: bold;
+            border: 2px solid #000;
+            background: #f0f0f0;
+            cursor: pointer;
+        }
+        .cd-val { font-size: clamp(28px,7vw,48px); font-weight: bold; width: clamp(52px,12vw,80px); font-variant-numeric: tabular-nums; }
+        .cd-unit { font-size: clamp(11px,2.5vw,15px); opacity: 0.6; }
+        .cd-sep { font-size: clamp(28px,7vw,48px); font-weight: bold; margin-bottom: 18px; }
+        .cd-alert { font-size: clamp(14px,3vw,20px); font-weight: bold; min-height: 28px; color: #c00; }
+        .lap-list { max-height: clamp(80px,15vh,130px); overflow-y: auto; border: 1px solid #ccc; font-size: clamp(11px,2.5vw,15px); text-align: left; }
+        .lap-item { display: flex; justify-content: space-between; padding: clamp(3px,1vw,6px) clamp(6px,1.5vw,10px); border-bottom: 1px dotted #ccc; }
+        .lap-item:last-child { border-bottom: none; }
+        .lap-item.fastest { font-weight: bold; }
+        .lap-item.slowest { opacity: 0.5; }
+
+        /* ── Tab 6: Calculator ── */
+        .calc-wrap {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: clamp(10px,3vw,30px) 0;
+            min-height: calc(100vh - 45px);
+        }
+        .calc { width: 100%; max-width: 420px; display: flex; flex-direction: column; }
+        .calc-display {
+            background: #1a1a1a;
+            color: #fff;
+            padding: clamp(12px,3vw,24px) clamp(16px,4vw,28px);
+            text-align: right;
+            min-height: clamp(90px,18vw,140px);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+        .calc-expr { font-size: clamp(14px,3vw,20px); opacity: 0.5; min-height: clamp(18px,4vw,26px); margin-bottom: 4px; word-break: break-all; }
+        .calc-num { font-size: clamp(44px,11vw,76px); font-weight: 200; letter-spacing: -1px; line-height: 1; word-break: break-all; transition: font-size 0.1s; }
+        .calc-num.small  { font-size: clamp(28px,7vw,48px); }
+        .calc-num.xsmall { font-size: clamp(20px,5vw,34px); }
+        .calc-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: clamp(2px,0.8vw,6px);
+            background: #1a1a1a;
+            padding: clamp(2px,0.8vw,6px);
+        }
+        .cb {
+            height: clamp(64px,16vw,100px);
+            font-size: clamp(20px,5vw,34px);
+            font-weight: 400;
+            border: none;
+            cursor: pointer;
+            font-family: 'Helvetica Neue', sans-serif;
+            transition: opacity 0.1s;
+            border-radius: clamp(4px,1.5vw,10px);
+        }
+        .cb:active { opacity: 0.7; }
+        .cb-num { background: #333; color: #fff; }
+        .cb-fn  { background: #a5a5a5; color: #000; }
+        .cb-op  { background: #f0a500; color: #fff; font-size: clamp(24px,6vw,40px); }
+        .cb-op.active { background: #fff; color: #f0a500; }
+        .cb-zero { grid-column: span 2; text-align: left; padding-left: clamp(20px,5vw,36px); }
 
         /* ── Footer ── */
         .footer { text-align: center; font-size: clamp(9px,2vw,12px); opacity: 0.6; margin-top: 10px; padding-bottom: 8px; }
 
         /* ── Media Queries ── */
         @media (max-width: 480px) {
-            .tab-btn { padding: 8px 3px; font-size: 10px; }
+            .tab-btn { padding: 6px 2px; font-size: 9px; }
             #time { font-size: 36px; }
             #bigTime { font-size: 60px; }
         }
@@ -276,13 +375,15 @@
     <button class="tab-btn" onclick="switchTab(1)">🔒 Lock</button>
     <button class="tab-btn" onclick="switchTab(2)">📰 News</button>
     <button class="tab-btn active" onclick="switchTab(3)">🕐 Clock</button>
+    <button class="tab-btn" onclick="switchTab(4)">⏱️ Timer</button>
+    <button class="tab-btn" onclick="switchTab(5)">🔢 Calc</button>
 </div>
 
 <!-- ══════════════ TAB 1: Dashboard ══════════════ -->
 <div id="tab1" class="tab-content">
     <div class="clock">
-        <div id="time">20:43:00</div>
-        <div id="date">2026年02月21日（土）</div>
+        <div id="time">14:28:00</div>
+        <div id="date">2026年02月22日（日）</div>
     </div>
     <div class="fx-rate">
         <div>💱 JPY / VND</div>
@@ -319,8 +420,8 @@
     <div class="lockscreen">
         <div class="lock-overlay"></div>
         <div class="lock-content">
-            <div class="lock-time" id="lockTime">20:43</div>
-            <div class="lock-date" id="lockDate">土曜日, 2月21日</div>
+            <div class="lock-time" id="lockTime">14:28</div>
+            <div class="lock-date" id="lockDate">日曜日, 2月22日</div>
         </div>
         <div class="lock-info">
             <div class="lock-weather" id="lockWeather">⛅ --°C · Tokyo</div>
@@ -350,8 +451,8 @@
 <!-- ══════════════ TAB 4: Big Clock (DEFAULT) ══════════════ -->
 <div id="tab4" class="tab-content active">
     <div class="bigclock-wrap">
-        <div id="bigTime">20:43</div>
-        <div id="bigDate">2026年02月21日（土）</div>
+        <div id="bigTime">14:28</div>
+        <div id="bigDate">2026年02月22日（日）</div>
         <div class="big-holidays" id="bigHolidayList"></div>
         <div class="bigcal">
             <table id="bigCalendar"></table>
@@ -359,6 +460,84 @@
         <div class="big-quote">
             <div class="big-quote-text" id="bigQuoteText"></div>
             <div class="big-quote-author" id="bigQuoteAuthor"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════ TAB 5: Stopwatch & Countdown ══════════════ -->
+<div id="tab5" class="tab-content">
+    <div class="timer-wrap">
+
+        <div class="timer-block">
+            <div class="timer-label">⏱️ Stopwatch</div>
+            <div class="sw-display" id="swDisplay">00:00.0</div>
+            <div class="timer-btns">
+                <button class="tbtn tbtn-main" id="swStartBtn" onclick="swToggle()">START</button>
+                <button class="tbtn tbtn-sub"  onclick="swReset()">RESET</button>
+                <button class="tbtn tbtn-sub"  onclick="swLap()">LAP</button>
+            </div>
+            <div class="lap-list" id="lapList"></div>
+        </div>
+
+        <div class="timer-divider"></div>
+
+        <div class="timer-block">
+            <div class="timer-label">⏳ Countdown</div>
+            <div class="cd-display" id="cdDisplay">05:00</div>
+            <div class="cd-inputs">
+                <div class="cd-input-group">
+                    <button class="cd-adj" onclick="cdAdj('m',1)">＋</button>
+                    <div class="cd-val" id="cdMin">05</div>
+                    <div class="cd-unit">分</div>
+                    <button class="cd-adj" onclick="cdAdj('m',-1)">－</button>
+                </div>
+                <div class="cd-sep">:</div>
+                <div class="cd-input-group">
+                    <button class="cd-adj" onclick="cdAdj('s',10)">＋</button>
+                    <div class="cd-val" id="cdSec">00</div>
+                    <div class="cd-unit">秒</div>
+                    <button class="cd-adj" onclick="cdAdj('s',-10)">－</button>
+                </div>
+            </div>
+            <div class="timer-btns">
+                <button class="tbtn tbtn-main" id="cdStartBtn" onclick="cdToggle()">START</button>
+                <button class="tbtn tbtn-sub"  onclick="cdReset()">RESET</button>
+            </div>
+            <div class="cd-alert" id="cdAlert"></div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ══════════════ TAB 6: Calculator ══════════════ -->
+<div id="tab6" class="tab-content">
+    <div class="calc-wrap">
+        <div class="calc">
+            <div class="calc-display">
+                <div class="calc-expr" id="calcExpr"></div>
+                <div class="calc-num"  id="calcNum">0</div>
+            </div>
+            <div class="calc-grid">
+                <button class="cb cb-fn"  onclick="calcFn('AC')">AC</button>
+                <button class="cb cb-fn"  onclick="calcFn('+/-')">+/-</button>
+                <button class="cb cb-fn"  onclick="calcFn('%')">%</button>
+                <button class="cb cb-op"  id="op-div" onclick="calcOp('÷')">÷</button>
+                <button class="cb cb-num" onclick="calcNum('7')">7</button>
+                <button class="cb cb-num" onclick="calcNum('8')">8</button>
+                <button class="cb cb-num" onclick="calcNum('9')">9</button>
+                <button class="cb cb-op"  id="op-mul" onclick="calcOp('×')">×</button>
+                <button class="cb cb-num" onclick="calcNum('4')">4</button>
+                <button class="cb cb-num" onclick="calcNum('5')">5</button>
+                <button class="cb cb-num" onclick="calcNum('6')">6</button>
+                <button class="cb cb-op"  id="op-sub" onclick="calcOp('−')">−</button>
+                <button class="cb cb-num" onclick="calcNum('1')">1</button>
+                <button class="cb cb-num" onclick="calcNum('2')">2</button>
+                <button class="cb cb-num" onclick="calcNum('3')">3</button>
+                <button class="cb cb-op"  id="op-add" onclick="calcOp('+')">+</button>
+                <button class="cb cb-num cb-zero" onclick="calcNum('0')">0</button>
+                <button class="cb cb-num" onclick="calcNum('.')">.</button>
+                <button class="cb cb-op"  onclick="calcEqual();">=</button>
+            </div>
         </div>
     </div>
 </div>
@@ -503,7 +682,7 @@
         xhr.send();
     }
 
-    /* ── Weather (Open-Meteo, no key) ── */
+    /* ── Weather ── */
     function loadWeather() {
         var url = 'https://api.open-meteo.com/v1/forecast' +
                   '?latitude=35.6762&longitude=139.6503' +
@@ -516,9 +695,7 @@
             if (xhr.status === 200) renderWeather(JSON.parse(xhr.responseText));
             else document.getElementById('wDesc').innerHTML = 'Lỗi API';
         };
-        xhr.onerror = function() {
-            document.getElementById('wDesc').innerHTML = 'Lỗi kết nối';
-        };
+        xhr.onerror = function() { document.getElementById('wDesc').innerHTML = 'Lỗi kết nối'; };
         xhr.send();
     }
 
@@ -526,76 +703,51 @@
         var cw  = data.current_weather;
         var wmo = getWMO(cw.weathercode);
         var t   = Math.round(cw.temperature);
-
         document.getElementById('wTemp').innerHTML       = t + '°C';
         document.getElementById('wIcon').innerHTML       = wmo[0];
         document.getElementById('wDesc').innerHTML       = wmo[1];
         document.getElementById('wWind').innerHTML       = Math.round(cw.windspeed) + ' km/h';
         document.getElementById('lockWeather').innerHTML = wmo[0] + ' ' + t + '°C · Tokyo';
-
         var hr  = getJST().getHours();
-        var hum = (data.hourly && data.hourly.relativehumidity_2m)
-                  ? (data.hourly.relativehumidity_2m[hr] || '--') : '--';
+        var hum = (data.hourly && data.hourly.relativehumidity_2m) ? (data.hourly.relativehumidity_2m[hr] || '--') : '--';
         document.getElementById('wHumidity').innerHTML = hum + '%';
     }
 
     /* ── Holidays ── */
     function loadHolidays() {
         var year = getJST().getFullYear();
-
         var xhrJP = new XMLHttpRequest();
         xhrJP.open('GET', 'https://holidays-jp.github.io/api/v1/' + year + '/date.json', true);
-        xhrJP.onload = function() {
-            if (xhrJP.status === 200) displayHolidays(JSON.parse(xhrJP.responseText), 'JP');
-        };
+        xhrJP.onload = function() { if (xhrJP.status === 200) displayHolidays(JSON.parse(xhrJP.responseText), 'JP'); };
         xhrJP.send();
-
         var xhrVN = new XMLHttpRequest();
         xhrVN.open('GET', 'https://date.nager.at/api/v3/PublicHolidays/' + year + '/VN', true);
-        xhrVN.onload = function() {
-            if (xhrVN.status === 200) displayHolidays(JSON.parse(xhrVN.responseText), 'VN');
-        };
+        xhrVN.onload = function() { if (xhrVN.status === 200) displayHolidays(JSON.parse(xhrVN.responseText), 'VN'); };
         xhrVN.send();
     }
 
     function displayHolidays(data, country) {
         var currentMonth = getJST().getMonth() + 1;
         var html = '';
-
         if (country === 'JP') {
             for (var ds in data) {
-                var p  = ds.split('-');
-                var mo = parseInt(p[1]);
-                var dy = parseInt(p[2]);
-                if (mo === currentMonth) {
-                    html += '<div class="holiday-item">🇯🇵 ' + mo + '/' + dy + ' ' + data[ds] + '</div>';
-                    holidayDates[dy] = true;
-                }
+                var p = ds.split('-'); var mo = parseInt(p[1]); var dy = parseInt(p[2]);
+                if (mo === currentMonth) { html += '<div class="holiday-item">🇯🇵 ' + mo + '/' + dy + ' ' + data[ds] + '</div>'; holidayDates[dy] = true; }
             }
         } else {
             for (var i = 0; i < data.length; i++) {
-                var p  = data[i].date.split('-');
-                var mo = parseInt(p[1]);
-                var dy = parseInt(p[2]);
-                if (mo === currentMonth) {
-                    html += '<div class="holiday-item">🇻🇳 ' + mo + '/' + dy + ' ' + data[i].localName + '</div>';
-                }
+                var p = data[i].date.split('-'); var mo = parseInt(p[1]); var dy = parseInt(p[2]);
+                if (mo === currentMonth) { html += '<div class="holiday-item">🇻🇳 ' + mo + '/' + dy + ' ' + data[i].localName + '</div>'; }
             }
         }
-
         var el = document.getElementById('holidayList');
-        if (html) {
-            el.innerHTML = (el.innerHTML === 'Đang tải...' ? '' : el.innerHTML) + html;
-        } else if (el.innerHTML === 'Đang tải...') {
-            el.innerHTML = 'Không có lễ';
-        }
-
+        if (html) { el.innerHTML = (el.innerHTML === 'Đang tải...' ? '' : el.innerHTML) + html; }
+        else if (el.innerHTML === 'Đang tải...') { el.innerHTML = 'Không có lễ'; }
         renderCalendar();
         renderBigCalendar();
         renderBigHolidays();
     }
 
-    /* ── Big Holidays (Tab 4) ── */
     function renderBigHolidays() {
         var src = document.getElementById('holidayList');
         var el  = document.getElementById('bigHolidayList');
@@ -605,84 +757,44 @@
 
     /* ── Calendar (Tab 1) ── */
     function renderCalendar() {
-        var jst      = getJST();
-        var year     = jst.getFullYear();
-        var month    = jst.getMonth();
-        var today    = jst.getDate();
-        var table    = document.getElementById('calendar');
-        table.innerHTML = '';
-
-        var thead = document.createElement('thead');
-        var hr    = document.createElement('tr');
-        for (var i = 0; i < WEEKDAYS.length; i++) {
-            var th = document.createElement('th');
-            th.innerHTML = WEEKDAYS[i];
-            hr.appendChild(th);
-        }
-        thead.appendChild(hr);
-        table.appendChild(thead);
-
-        var tbody    = document.createElement('tbody');
-        var firstDay = new Date(year, month, 1).getDay();
-        var total    = new Date(year, month + 1, 0).getDate();
-        var row      = document.createElement('tr');
-
+        var jst = getJST(); var year = jst.getFullYear(); var month = jst.getMonth(); var today = jst.getDate();
+        var table = document.getElementById('calendar'); table.innerHTML = '';
+        var thead = document.createElement('thead'); var hr = document.createElement('tr');
+        for (var i = 0; i < WEEKDAYS.length; i++) { var th = document.createElement('th'); th.innerHTML = WEEKDAYS[i]; hr.appendChild(th); }
+        thead.appendChild(hr); table.appendChild(thead);
+        var tbody = document.createElement('tbody');
+        var firstDay = new Date(year, month, 1).getDay(); var total = new Date(year, month + 1, 0).getDate();
+        var row = document.createElement('tr');
         for (var i = 0; i < firstDay; i++) row.appendChild(document.createElement('td'));
-
         for (var d = 1; d <= total; d++) {
-            if ((firstDay + d - 1) % 7 === 0 && d !== 1) {
-                tbody.appendChild(row);
-                row = document.createElement('tr');
-            }
-            var td = document.createElement('td');
-            td.innerHTML = d;
+            if ((firstDay + d - 1) % 7 === 0 && d !== 1) { tbody.appendChild(row); row = document.createElement('tr'); }
+            var td = document.createElement('td'); td.innerHTML = d;
             if (d === today) td.className = 'today';
             if (holidayDates[d]) td.className = (td.className ? td.className + ' ' : '') + 'holiday';
             row.appendChild(td);
         }
-        tbody.appendChild(row);
-        table.appendChild(tbody);
+        tbody.appendChild(row); table.appendChild(tbody);
     }
 
     /* ── Big Calendar (Tab 4) ── */
     function renderBigCalendar() {
-        var jst      = getJST();
-        var year     = jst.getFullYear();
-        var month    = jst.getMonth();
-        var today    = jst.getDate();
-        var table    = document.getElementById('bigCalendar');
-        table.innerHTML = '';
-
-        var thead = document.createElement('thead');
-        var hr    = document.createElement('tr');
-        for (var i = 0; i < WEEKDAYS.length; i++) {
-            var th = document.createElement('th');
-            th.innerHTML = WEEKDAYS[i];
-            hr.appendChild(th);
-        }
-        thead.appendChild(hr);
-        table.appendChild(thead);
-
-        var tbody    = document.createElement('tbody');
-        var firstDay = new Date(year, month, 1).getDay();
-        var total    = new Date(year, month + 1, 0).getDate();
-        var row      = document.createElement('tr');
-
+        var jst = getJST(); var year = jst.getFullYear(); var month = jst.getMonth(); var today = jst.getDate();
+        var table = document.getElementById('bigCalendar'); table.innerHTML = '';
+        var thead = document.createElement('thead'); var hr = document.createElement('tr');
+        for (var i = 0; i < WEEKDAYS.length; i++) { var th = document.createElement('th'); th.innerHTML = WEEKDAYS[i]; hr.appendChild(th); }
+        thead.appendChild(hr); table.appendChild(thead);
+        var tbody = document.createElement('tbody');
+        var firstDay = new Date(year, month, 1).getDay(); var total = new Date(year, month + 1, 0).getDate();
+        var row = document.createElement('tr');
         for (var i = 0; i < firstDay; i++) row.appendChild(document.createElement('td'));
-
         for (var d = 1; d <= total; d++) {
-            if ((firstDay + d - 1) % 7 === 0 && d !== 1) {
-                tbody.appendChild(row);
-                row = document.createElement('tr');
-            }
-            var td = document.createElement('td');
-            td.innerHTML = d;
+            if ((firstDay + d - 1) % 7 === 0 && d !== 1) { tbody.appendChild(row); row = document.createElement('tr'); }
+            var td = document.createElement('td'); td.innerHTML = d;
             if (d === today) td.className = 'today';
             if (holidayDates[d]) td.className = (td.className ? td.className + ' ' : '') + 'holiday';
             row.appendChild(td);
         }
-        tbody.appendChild(row);
-        table.appendChild(tbody);
+        tbody.appendChild(row); table.appendChild(tbody);
     }
 
     /* ── RSS News ── */
@@ -690,7 +802,6 @@
         fetchRSS('https://news.google.com/rss?hl=ja&gl=JP&ceid=JP:ja', 'newsJP', '🇯🇵');
         fetchRSS('https://news.google.com/rss?hl=vi&gl=VN&ceid=VN:vi', 'newsVN', '🇻🇳');
     }
-
     function fetchRSS(feedUrl, targetId, flag) {
         var api = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(feedUrl) + '&count=10';
         var xhr = new XMLHttpRequest();
@@ -699,12 +810,9 @@
             if (xhr.status === 200) displayRSS(JSON.parse(xhr.responseText), targetId, flag);
             else document.getElementById(targetId).innerHTML = '<div class="news-loading">Lỗi tải tin</div>';
         };
-        xhr.onerror = function() {
-            document.getElementById(targetId).innerHTML = '<div class="news-loading">Lỗi kết nối</div>';
-        };
+        xhr.onerror = function() { document.getElementById(targetId).innerHTML = '<div class="news-loading">Lỗi kết nối</div>'; };
         xhr.send();
     }
-
     function displayRSS(data, targetId, flag) {
         var html = '';
         if (data.items && data.items.length > 0) {
@@ -712,15 +820,181 @@
                 var title  = data.items[i].title  || 'No title';
                 var source = data.items[i].author || 'Google News';
                 if (title.length > 100) title = title.substring(0, 97) + '...';
-                html += '<div class="news-item">' +
-                    '<div class="news-title">' + flag + ' ' + title + '</div>' +
-                    '<div class="news-source">' + source + '</div>' +
-                '</div>';
+                html += '<div class="news-item"><div class="news-title">' + flag + ' ' + title + '</div><div class="news-source">' + source + '</div></div>';
             }
-        } else {
-            html = '<div class="news-loading">Không có tin</div>';
-        }
+        } else { html = '<div class="news-loading">Không có tin</div>'; }
         document.getElementById(targetId).innerHTML = html;
+    }
+
+    /* ══════════════════════════════
+       STOPWATCH
+    ══════════════════════════════ */
+    var swRunning = false; var swStart = 0; var swElapsed = 0; var swTimer = null; var swLaps = [];
+
+    function swToggle() {
+        if (!swRunning) {
+            swStart = Date.now() - swElapsed;
+            swTimer = setInterval(swTick, 100);
+            swRunning = true;
+            document.getElementById('swStartBtn').innerHTML  = 'STOP';
+            document.getElementById('swStartBtn').className = 'tbtn tbtn-main running';
+        } else {
+            clearInterval(swTimer);
+            swElapsed = Date.now() - swStart;
+            swRunning = false;
+            document.getElementById('swStartBtn').innerHTML  = 'START';
+            document.getElementById('swStartBtn').className = 'tbtn tbtn-main';
+        }
+    }
+    function swTick() { swElapsed = Date.now() - swStart; document.getElementById('swDisplay').innerHTML = swFormat(swElapsed); }
+    function swReset() {
+        clearInterval(swTimer); swRunning = false; swElapsed = 0; swLaps = [];
+        document.getElementById('swDisplay').innerHTML  = '00:00.0';
+        document.getElementById('swStartBtn').innerHTML = 'START';
+        document.getElementById('swStartBtn').className = 'tbtn tbtn-main';
+        document.getElementById('lapList').innerHTML    = '';
+    }
+    function swLap() {
+        if (!swRunning && swElapsed === 0) return;
+        swLaps.push(swElapsed); renderLaps();
+    }
+    function swFormat(ms) {
+        var total = Math.floor(ms / 100); var tenth = total % 10;
+        var secs  = Math.floor(total / 10) % 60; var mins = Math.floor(total / 600);
+        return pad(mins) + ':' + pad(secs) + '.' + tenth;
+    }
+    function renderLaps() {
+        if (swLaps.length === 0) return;
+        var splits = [];
+        for (var i = 0; i < swLaps.length; i++) splits.push(i === 0 ? swLaps[0] : swLaps[i] - swLaps[i-1]);
+        var minSplit = Math.min.apply(null, splits); var maxSplit = Math.max.apply(null, splits);
+        var html = '';
+        for (var i = swLaps.length - 1; i >= 0; i--) {
+            var cls = splits.length > 1 ? (splits[i] === minSplit ? ' fastest' : splits[i] === maxSplit ? ' slowest' : '') : '';
+            html += '<div class="lap-item' + cls + '"><span>Lap ' + (i+1) + '</span><span>' + swFormat(splits[i]) + '</span><span>' + swFormat(swLaps[i]) + '</span></div>';
+        }
+        document.getElementById('lapList').innerHTML = html;
+    }
+
+    /* ══════════════════════════════
+       COUNTDOWN
+    ══════════════════════════════ */
+    var cdRunning = false; var cdTimer = null; var cdMinutes = 5; var cdSeconds = 0; var cdRemain = 0;
+
+    function cdAdj(unit, val) {
+        if (cdRunning) return;
+        if (unit === 'm') cdMinutes = Math.max(0, Math.min(99, cdMinutes + val));
+        else cdSeconds = Math.max(0, Math.min(50, cdSeconds + val));
+        document.getElementById('cdMin').innerHTML = pad(cdMinutes);
+        document.getElementById('cdSec').innerHTML = pad(cdSeconds);
+        cdRemain = (cdMinutes * 60 + cdSeconds) * 1000;
+        cdRefreshDisplay();
+        document.getElementById('cdAlert').innerHTML = '';
+    }
+    function cdToggle() {
+        if (!cdRunning) {
+            if (cdRemain <= 0) cdRemain = (cdMinutes * 60 + cdSeconds) * 1000;
+            if (cdRemain <= 0) return;
+            document.getElementById('cdAlert').innerHTML = '';
+            document.getElementById('cdDisplay').className = 'cd-display';
+            var endTime = Date.now() + cdRemain;
+            cdTimer = setInterval(function() { cdTick(endTime); }, 200);
+            cdRunning = true;
+            document.getElementById('cdStartBtn').innerHTML  = 'PAUSE';
+            document.getElementById('cdStartBtn').className = 'tbtn tbtn-main running';
+        } else {
+            clearInterval(cdTimer); cdRunning = false;
+            document.getElementById('cdStartBtn').innerHTML  = 'START';
+            document.getElementById('cdStartBtn').className = 'tbtn tbtn-main';
+        }
+    }
+    function cdTick(endTime) {
+        cdRemain = endTime - Date.now();
+        if (cdRemain <= 0) {
+            cdRemain = 0; clearInterval(cdTimer); cdRunning = false;
+            document.getElementById('cdDisplay').innerHTML  = '00:00';
+            document.getElementById('cdDisplay').className = 'cd-display alert';
+            document.getElementById('cdStartBtn').innerHTML = 'START';
+            document.getElementById('cdStartBtn').className = 'tbtn tbtn-main';
+            document.getElementById('cdAlert').innerHTML   = '🔔 Hết giờ!';
+            return;
+        }
+        cdRefreshDisplay();
+    }
+    function cdRefreshDisplay() {
+        var total = Math.ceil(cdRemain / 1000); var m = Math.floor(total / 60); var s = total % 60;
+        document.getElementById('cdDisplay').innerHTML = pad(m) + ':' + pad(s);
+    }
+    function cdReset() {
+        clearInterval(cdTimer); cdRunning = false;
+        cdRemain = (cdMinutes * 60 + cdSeconds) * 1000;
+        document.getElementById('cdDisplay').innerHTML  = pad(cdMinutes) + ':' + pad(cdSeconds);
+        document.getElementById('cdDisplay').className = 'cd-display';
+        document.getElementById('cdStartBtn').innerHTML = 'START';
+        document.getElementById('cdStartBtn').className = 'tbtn tbtn-main';
+        document.getElementById('cdAlert').innerHTML   = '';
+    }
+    cdRemain = (cdMinutes * 60 + cdSeconds) * 1000;
+
+    /* ══════════════════════════════
+       CALCULATOR
+    ══════════════════════════════ */
+    var calcCurrent = '0'; var calcPrev = ''; var calcOperator = ''; var calcNewNum = true; var calcResult = false;
+
+    function calcDisplay() {
+        var el = document.getElementById('calcNum'); el.innerHTML = calcCurrent;
+        var len = calcCurrent.replace('-','').length;
+        el.className = 'calc-num' + (len > 9 ? ' xsmall' : len > 6 ? ' small' : '');
+    }
+    function calcNum(v) {
+        if (calcResult && v !== '.') { calcCurrent = '0'; calcResult = false; }
+        if (v === '.') {
+            if (calcNewNum) { calcCurrent = '0.'; calcNewNum = false; return calcDisplay(); }
+            if (calcCurrent.indexOf('.') !== -1) return;
+            calcCurrent += '.'; return calcDisplay();
+        }
+        if (calcNewNum) { calcCurrent = v; calcNewNum = false; }
+        else { calcCurrent = calcCurrent === '0' ? v : calcCurrent + v; }
+        if (calcCurrent.replace('-','').length > 12) return;
+        calcDisplay();
+    }
+    function calcOp(op) {
+        if (calcOperator && !calcNewNum) calcEqual(true);
+        calcPrev = calcCurrent; calcOperator = op; calcNewNum = true; calcResult = false;
+        var ids = {'÷':'op-div','×':'op-mul','−':'op-sub','+':'op-add'};
+        var btns = document.querySelectorAll('.cb-op');
+        for (var i = 0; i < btns.length; i++) btns[i].className = 'cb cb-op';
+        if (ids[op]) document.getElementById(ids[op]).className = 'cb cb-op active';
+        document.getElementById('calcExpr').innerHTML = calcPrev + ' ' + op;
+    }
+    function calcEqual(chain) {
+        if (!calcOperator) return;
+        var a = parseFloat(calcPrev); var b = parseFloat(calcCurrent); var r;
+        if (calcOperator === '÷') r = b !== 0 ? a / b : 'Error';
+        if (calcOperator === '×') r = a * b;
+        if (calcOperator === '−') r = a - b;
+        if (calcOperator === '+') r = a + b;
+        if (!chain) {
+            document.getElementById('calcExpr').innerHTML = calcPrev + ' ' + calcOperator + ' ' + calcCurrent + ' =';
+            calcOperator = '';
+            var btns = document.querySelectorAll('.cb-op');
+            for (var i = 0; i < btns.length; i++) btns[i].className = 'cb cb-op';
+        }
+        if (r === 'Error') { calcCurrent = 'Error'; }
+        else { var s = parseFloat(r.toFixed(10)).toString(); calcCurrent = s.length > 12 ? parseFloat(r.toPrecision(8)).toString() : s; }
+        calcPrev = calcCurrent; calcNewNum = true; calcResult = !chain; calcDisplay();
+    }
+    function calcFn(fn) {
+        var n = parseFloat(calcCurrent);
+        if (fn === 'AC') {
+            calcCurrent = '0'; calcPrev = ''; calcOperator = ''; calcNewNum = true; calcResult = false;
+            document.getElementById('calcExpr').innerHTML = '';
+            var btns = document.querySelectorAll('.cb-op');
+            for (var i = 0; i < btns.length; i++) btns[i].className = 'cb cb-op';
+        }
+        if (fn === '+/-') { calcCurrent = (n * -1).toString(); calcResult = false; }
+        if (fn === '%')   { calcCurrent = (n / 100).toString(); calcResult = false; }
+        calcDisplay();
     }
 
     /* ── Init ── */
