@@ -1,0 +1,17 @@
+CACHE MANIFEST
+# Kindle Dashboard v1.2
+
+CACHE:
+index.html
+style.css
+app.js
+quotes.js
+
+NETWORK:
+api.exchangerate-api.com
+api.open-meteo.com
+holidays-jp.github.io
+date.nager.at
+
+FALLBACK:
+/ index.html

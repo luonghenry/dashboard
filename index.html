@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" manifest="offline.appcache">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -12,7 +12,6 @@
 </head>
 <body>
 
-<!-- ══ Tabs ══ -->
 <div class="tabs">
     <button class="tab-btn"        onclick="switchTab(0)">📊 Info</button>
     <button class="tab-btn active" onclick="switchTab(1)">🕐 Clock</button>
@@ -20,6 +19,8 @@
     <button class="tab-btn"        onclick="switchTab(3)">🔢 Calc</button>
     <button class="tab-btn"        onclick="switchTab(4)">🍅 Pomo</button>
 </div>
+
+<div id="onlineStatus" class="status-online">🟢 Online</div>
 
 <!-- ══════════ TAB 1: INFO ══════════ -->
 <div id="tab1" class="tab-content">
@@ -80,7 +81,6 @@
 <!-- ══════════ TAB 3: TIMER ══════════ -->
 <div id="tab3" class="tab-content">
     <div class="timer-wrap">
-
         <div class="timer-block">
             <div class="timer-label">⏱️ Stopwatch</div>
             <div class="sw-display" id="swDisplay">00:00.0</div>
@@ -91,9 +91,7 @@
             </div>
             <div class="lap-list" id="lapList"></div>
         </div>
-
         <div class="timer-divider"></div>
-
         <div class="timer-block">
             <div class="timer-label">⏳ Countdown</div>
             <div class="cd-display" id="cdDisplay">05:00</div>
@@ -118,7 +116,6 @@
             </div>
             <div id="cdAlert" class="cd-alert"></div>
         </div>
-
     </div>
 </div>
 
@@ -130,7 +127,6 @@
                 <div class="calc-expr" id="calcExpr"></div>
                 <div class="calc-num"  id="calcNum">0</div>
             </div>
-            <!-- TABLE thay CSS Grid — Kindle WebKit safe -->
             <table class="calc-grid" cellspacing="0" cellpadding="0">
                 <tr class="calc-row">
                     <td class="cb cb-fn"  onclick="calcFn('AC')">AC</td>
@@ -218,7 +214,6 @@
     </div>
 </div>
 
-<!-- app.js load sau cùng — quotes.js phải load trước -->
 <script src="app.js"></script>
 </body>
 </html>
