@@ -119,27 +119,74 @@ function toggleNetworkMode() {
     }
     updateStatusBar();
 }
-
+/* ══════════════════════════════
+   NETWORK MODE SWITCH & PING
+══════════════════════════════ */
 function pingCheck() {
     if (MANUAL_OFFLINE) return;
     
+    /* Trên thiết bị siêu cũ như Kindle, gọi API ngoài (như open-meteo) để ping 
+       dễ dính lỗi CORS/SSL (thường văng mã lỗi status 0). 
+       Nên ta sẽ fallback về cơ chế an toàn hơn: ping Google (dùng http để tránh lỗi chứng chỉ SSL)
+       hoặc tốt nhất là gán thẳng navigator.onLine nếu ping lỗi. */
+       
     var xhr = new XMLHttpRequest();
-    xhr.open('HEAD', 'https://api.open-meteo.com/favicon.ico?_=' + Date.now(), true);
+    // Sử dụng URL HTTP trần (không 'S') của trang có SSL siêu tương thích để tránh lỗi chứng chỉ
+    xhr.open('HEAD', 'http://captive.apple.com/hotspot-detect.html?_=' + Date.now(), true);
     xhr.timeout = 5000;
+    
     xhr.onreadystatechange = function() {
         if (xhr.readyState !== 4) return;
+        
         var wasOnline = IS_ONLINE;
-        IS_ONLINE = (xhr.status > 0 && xhr.status < 500);
+        
+        // Nếu status = 0 trên Kindle cũ, có thể do bị block chéo domain (CORS). 
+        // Thay vì đánh rớt mạng lập tức, ta tin cậy vào navigator.onLine nếu nó báo true.
+        if (xhr.status > 0 && xhr.status < 500) {
+            IS_ONLINE = true;
+        } else {
+            // Rơi vào trường hợp lỗi status 0 (Cors/SSL block)
+            if (typeof navigator.onLine !== 'undefined') {
+                IS_ONLINE = navigator.onLine; // Tin vào thiết bị
+            } else {
+                IS_ONLINE = false; 
+            }
+        }
+        
         updateStatusBar();
+        
         if (!wasOnline && IS_ONLINE && !MANUAL_OFFLINE) {
-            loadFX(); loadWeather(); loadHolidays();
-            if (window.applicationCache) { try { window.applicationCache.update(); } catch(e) {} }
+            loadFX(); 
+            loadWeather(); 
+            loadHolidays();
+            if (window.applicationCache) { 
+                try { window.applicationCache.update(); } catch(e) {} 
+            }
         }
     };
-    xhr.ontimeout = function() { IS_ONLINE = false; updateStatusBar(); };
-    xhr.onerror   = function() { IS_ONLINE = false; updateStatusBar(); };
-    try { xhr.send(); } catch(e) { IS_ONLINE = false; updateStatusBar(); }
+    
+    xhr.ontimeout = function() { 
+        if (typeof navigator.onLine !== 'undefined') IS_ONLINE = navigator.onLine;
+        else IS_ONLINE = false; 
+        updateStatusBar(); 
+    };
+    
+    xhr.onerror = function() { 
+        if (typeof navigator.onLine !== 'undefined') IS_ONLINE = navigator.onLine;
+        else IS_ONLINE = false; 
+        updateStatusBar(); 
+    };
+    
+    try { 
+        xhr.send(); 
+    } catch(e) { 
+        if (typeof navigator.onLine !== 'undefined') IS_ONLINE = navigator.onLine;
+        else IS_ONLINE = false; 
+        updateStatusBar(); 
+    }
 }
+
+
 
 function startNetworkIntervals() {
     clearInterval(pingIntervalId);
