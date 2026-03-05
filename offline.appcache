@@ -1,5 +1,5 @@
 CACHE MANIFEST
-# Kindle Dashboard v1.4
+# Kindle Dashboard v1.5
 
 CACHE:
 index.html
@@ -15,3 +15,4 @@ date.nager.at
 
 FALLBACK:
 / index.html
+
