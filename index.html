@@ -20,7 +20,11 @@
     <button class="tab-btn"        onclick="switchTab(4)">🍅 Pomo</button>
 </div>
 
-<div id="onlineStatus" class="status-online">🟢 Online</div>
+<!-- Nút chuyển đổi Online/Offline -->
+<div id="statusWrap">
+    <div id="onlineStatus" class="status-online">🟢 Online</div>
+    <button id="toggleNetBtn" onclick="toggleNetworkMode()">Chuyển Offline</button>
+</div>
 
 <!-- ══════════ TAB 1: INFO ══════════ -->
 <div id="tab1" class="tab-content">
