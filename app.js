@@ -249,9 +249,9 @@ function loadFX() {
                 setHtml('fxrate', rate + ' VND'); setHtml('fxtime', time);
                 lsSet('fx_data', { rate: rate, time: time });
             } catch(e) {}
-        } else { IS_ONLINE = false; updateStatusBar(); }
+        }
     };
-    xhr.onerror = xhr.ontimeout = function() { IS_ONLINE = false; updateStatusBar(); };
+    xhr.onerror = xhr.ontimeout = function() {};
     xhr.send();
 }
 
@@ -272,9 +272,8 @@ function loadWeather() {
     xhr.onreadystatechange = function() {
         if (xhr.readyState !== 4) return;
         if (xhr.status === 200) { try { renderWeather(JSON.parse(xhr.responseText)); } catch(e) {} }
-        else { IS_ONLINE = false; updateStatusBar(); }
     };
-    xhr.onerror = xhr.ontimeout = function() { IS_ONLINE = false; updateStatusBar(); };
+    xhr.onerror = xhr.ontimeout = function() {};
     xhr.send();
 }
 
