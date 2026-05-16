@@ -54,7 +54,11 @@
         </div>
     </div>
     <div class="cal-wrap">
-        <div class="cal-title" id="calTitle">----年 --月</div>
+        <div class="cal-nav">
+            <button class="cal-nav-btn" onclick="calPrev()">◀</button>
+            <div class="cal-title" id="calTitle">----年 --月</div>
+            <button class="cal-nav-btn" onclick="calNext()">▶</button>
+        </div>
         <table id="calendar"></table>
     </div>
     <div class="holidays">
@@ -74,7 +78,14 @@
         <div id="bigTime">00:00</div>
         <div id="bigDate">----年--月--日（-）</div>
         <div class="big-holidays" id="bigHolidayList"></div>
-        <div class="bigcal"><table id="bigCalendar"></table></div>
+        <div class="bigcal">
+            <div class="bigcal-nav">
+                <button class="bigcal-nav-btn" onclick="calPrev()">◀</button>
+                <div class="bigcal-title" id="bigCalTitle"></div>
+                <button class="bigcal-nav-btn" onclick="calNext()">▶</button>
+            </div>
+            <table id="bigCalendar"></table>
+        </div>
         <div class="big-quote">
             <div class="big-quote-text"   id="bigQuoteText"></div>
             <div class="big-quote-author" id="bigQuoteAuthor"></div>

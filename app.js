@@ -13,7 +13,11 @@ var MANUAL_OFFLINE = false; /* Biến lưu trạng thái người dùng chủ đ
 var pingIntervalId = null;
 var apiIntervalId = null;
 var holidayDates  = {};
-var holidayBuffer = { JP: null, VN: null };
+var calYear = 0;
+var calMonth = 0;
+var loadedHolidayYear = 0;
+var rawHolidaysJP = {};
+var rawHolidaysVN = [];
 
 var selectedQuote = (typeof QUOTES !== 'undefined' && QUOTES.length)
     ? QUOTES[Math.floor(Math.random() * QUOTES.length)]
@@ -156,9 +160,9 @@ function pingCheck() {
         updateStatusBar();
         
         if (!wasOnline && IS_ONLINE && !MANUAL_OFFLINE) {
-            loadFX(); 
-            loadWeather(); 
-            loadHolidays();
+            loadFX();
+            loadWeather();
+            loadHolidaysForYear(calYear);
             if (window.applicationCache) { 
                 try { window.applicationCache.update(); } catch(e) {} 
             }
@@ -283,76 +287,79 @@ function renderWeather(data) {
     lsSet('weather_data', { temp: temp, icon: wmo[0], desc: wmo[1], wind: wind, hum: hum });
 }
 
-function loadHolidays() {
-    holidayBuffer = { JP: null, VN: null }; holidayDates = {};
-    var cached = lsGet('holiday_data');
-    if (cached) {
-        setHtml('holidayList', cached.html || ''); setHtml('bigHolidayList', cached.html || '');
-        if (cached.dates) for (var d in cached.dates) holidayDates[d] = true;
-        buildCal('calendar'); buildCal('bigCalendar');
+function loadHolidaysForYear(yr) {
+    loadedHolidayYear = yr;
+    var cachedJP = lsGet('holiday_raw_jp_' + yr);
+    var cachedVN = lsGet('holiday_raw_vn_' + yr);
+    rawHolidaysJP = cachedJP || {};
+    rawHolidaysVN = cachedVN || [];
+    rebuildAndRender();
+    if (!IS_ONLINE || MANUAL_OFFLINE) return;
+    if (!cachedJP) {
+        var x1 = new XMLHttpRequest();
+        x1.open('GET', 'https://holidays-jp.github.io/api/v1/' + yr + '/date.json', true); x1.timeout = 10000;
+        x1.onreadystatechange = function() {
+            if (x1.readyState !== 4) return;
+            if (x1.status === 200) { try { var d = JSON.parse(x1.responseText); rawHolidaysJP = d; lsSet('holiday_raw_jp_' + yr, d); if (yr === calYear) rebuildAndRender(); } catch(e) {} }
+        };
+        x1.onerror = x1.ontimeout = function() {};
+        x1.send();
     }
-    if (!IS_ONLINE || MANUAL_OFFLINE) {
-        if (!cached) setHtml('holidayList', 'Offline');
-        return;
+    if (!cachedVN) {
+        var x2 = new XMLHttpRequest();
+        x2.open('GET', 'https://date.nager.at/api/v3/PublicHolidays/' + yr + '/VN', true); x2.timeout = 10000;
+        x2.onreadystatechange = function() {
+            if (x2.readyState !== 4) return;
+            if (x2.status === 200) { try { var d2 = JSON.parse(x2.responseText); rawHolidaysVN = d2; lsSet('holiday_raw_vn_' + yr, d2); if (yr === calYear) rebuildAndRender(); } catch(e) {} }
+        };
+        x2.onerror = x2.ontimeout = function() {};
+        x2.send();
     }
-    var yr = getJST().getFullYear();
-    var x1 = new XMLHttpRequest();
-    x1.open('GET', 'https://holidays-jp.github.io/api/v1/' + yr + '/date.json', true); x1.timeout = 10000;
-    x1.onreadystatechange = function() {
-        if (x1.readyState !== 4) return;
-        holidayBuffer.JP = (x1.status === 200) ? (function(){try{return parseHolidaysJP(JSON.parse(x1.responseText));}catch(e){return [];}})() : [];
-        tryRenderHolidays();
-    };
-    x1.onerror = x1.ontimeout = function() { holidayBuffer.JP = []; tryRenderHolidays(); };
-    x1.send();
-
-    var x2 = new XMLHttpRequest();
-    x2.open('GET', 'https://date.nager.at/api/v3/PublicHolidays/' + yr + '/VN', true); x2.timeout = 10000;
-    x2.onreadystatechange = function() {
-        if (x2.readyState !== 4) return;
-        holidayBuffer.VN = (x2.status === 200) ? (function(){try{return parseHolidaysVN(JSON.parse(x2.responseText));}catch(e){return [];}})() : [];
-        tryRenderHolidays();
-    };
-    x2.onerror = x2.ontimeout = function() { holidayBuffer.VN = []; tryRenderHolidays(); };
-    x2.send();
 }
 
-function parseHolidaysJP(data) {
-    var mo = getJST().getMonth() + 1, res = [];
-    for (var ds in data) {
-        var p = ds.split('-'), m2 = parseInt(p[1],10), d2 = parseInt(p[2],10);
-        if (m2 === mo) { res.push({ day: d2, label: '🇯🇵 ' + m2 + '/' + d2 + ' ' + data[ds] }); holidayDates[d2] = true; }
+function rebuildHolidayDates() {
+    holidayDates = {};
+    var mo = calMonth + 1, yr = calYear, ds, p, d;
+    for (ds in rawHolidaysJP) {
+        p = ds.split('-');
+        if (parseInt(p[0],10) === yr && parseInt(p[1],10) === mo) { d = parseInt(p[2],10); holidayDates[d] = true; }
     }
-    return res;
+    for (var i = 0; i < rawHolidaysVN.length; i++) {
+        p = rawHolidaysVN[i].date.split('-');
+        if (parseInt(p[0],10) === yr && parseInt(p[1],10) === mo) { d = parseInt(p[2],10); holidayDates[d] = true; }
+    }
 }
 
-function parseHolidaysVN(data) {
-    var mo = getJST().getMonth() + 1, res = [];
-    for (var i = 0; i < data.length; i++) {
-        var p = data[i].date.split('-'), m2 = parseInt(p[1],10), d2 = parseInt(p[2],10);
-        if (m2 === mo) res.push({ day: d2, label: '🇻🇳 ' + m2 + '/' + d2 + ' ' + data[i].localName });
+function renderHolidayListForMonth() {
+    var mo = calMonth + 1, yr = calYear, all = [], i, html = '', ds, p, d;
+    for (ds in rawHolidaysJP) {
+        p = ds.split('-');
+        if (parseInt(p[0],10) === yr && parseInt(p[1],10) === mo) { d = parseInt(p[2],10); all.push({ day: d, label: '🇯🇵 ' + mo + '/' + d + ' ' + rawHolidaysJP[ds] }); }
     }
-    return res;
-}
-
-function tryRenderHolidays() {
-    if (holidayBuffer.JP === null || holidayBuffer.VN === null) return;
-    var all = [], i, html = '';
-    for (i=0; i<holidayBuffer.JP.length; i++) all.push(holidayBuffer.JP[i]);
-    for (i=0; i<holidayBuffer.VN.length; i++) all.push(holidayBuffer.VN[i]);
+    for (i = 0; i < rawHolidaysVN.length; i++) {
+        p = rawHolidaysVN[i].date.split('-');
+        if (parseInt(p[0],10) === yr && parseInt(p[1],10) === mo) { d = parseInt(p[2],10); all.push({ day: d, label: '🇻🇳 ' + mo + '/' + d + ' ' + rawHolidaysVN[i].localName }); }
+    }
     all.sort(function(a,b){return a.day-b.day;});
-    for (i=0; i<all.length; i++) html += '<div class="holiday-item">' + all[i].label + '</div>';
+    for (i = 0; i < all.length; i++) html += '<div class="holiday-item">' + all[i].label + '</div>';
     if (!html) html = '<div class="holiday-item">Không có ngày lễ</div>';
     setHtml('holidayList', html); setHtml('bigHolidayList', html);
-    buildCal('calendar'); buildCal('bigCalendar');
-    lsSet('holiday_data', { html: html, dates: holidayDates });
+}
+
+function rebuildAndRender() {
+    rebuildHolidayDates();
+    buildCal('calendar');
+    buildCal('bigCalendar');
+    renderHolidayListForMonth();
 }
 
 function buildCal(id) {
-    var t=getJST(), yr=t.getFullYear(), mo=t.getMonth(), today=t.getDate(), tbl=byId(id);
+    var yr=calYear, mo=calMonth, t=getJST(), today=(t.getFullYear()===yr&&t.getMonth()===mo)?t.getDate():-1, tbl=byId(id);
     if (!tbl) return;
     tbl.innerHTML = '';
-    if (id==='calendar') setHtml('calTitle', yr+'年 '+(mo+1)+'月');
+    var titleStr = yr+'年 '+(mo+1)+'月';
+    if (id==='calendar') setHtml('calTitle', titleStr);
+    if (id==='bigCalendar') setHtml('bigCalTitle', titleStr);
     var thead=document.createElement('thead'), hrow=document.createElement('tr'), i;
     for(i=0; i<7; i++) { var th=document.createElement('th'); th.innerHTML=WEEKDAYS[i]; hrow.appendChild(th); }
     thead.appendChild(hrow); tbl.appendChild(thead);
@@ -367,6 +374,18 @@ function buildCal(id) {
         row.appendChild(cell);
     }
     tbody.appendChild(row); tbl.appendChild(tbody);
+}
+
+function calPrev() {
+    calMonth--;
+    if (calMonth < 0) { calMonth = 11; calYear--; }
+    if (calYear !== loadedHolidayYear) { loadHolidaysForYear(calYear); } else { rebuildAndRender(); }
+}
+
+function calNext() {
+    calMonth++;
+    if (calMonth > 11) { calMonth = 0; calYear++; }
+    if (calYear !== loadedHolidayYear) { loadHolidaysForYear(calYear); } else { rebuildAndRender(); }
 }
 
 /* ══════════════════════════════
@@ -496,15 +515,15 @@ function init() {
     if (typeof navigator.onLine !== 'undefined') IS_ONLINE = navigator.onLine;
     updateStatusBar();
 
+    var nowCal = getJST(); calYear = nowCal.getFullYear(); calMonth = nowCal.getMonth();
+
     cdRemain = (cdMinutes * 60 + cdSeconds) * 1000;
     updateClock();
-    buildCal('calendar');
-    buildCal('bigCalendar');
     showQuote();
-    
+
     loadFX();
     loadWeather();
-    loadHolidays();
+    loadHolidaysForYear(calYear);
     pomoRefresh();
 
     setInterval(updateClock, 1000);
@@ -514,7 +533,7 @@ function init() {
         window.addEventListener('online', function() {
             if (MANUAL_OFFLINE) return;
             IS_ONLINE = true; updateStatusBar();
-            loadFX(); loadWeather(); loadHolidays();
+            loadFX(); loadWeather(); loadHolidaysForYear(calYear);
             if (window.applicationCache) { try { window.applicationCache.update(); } catch(e) {} }
         });
         window.addEventListener('offline', function() {
