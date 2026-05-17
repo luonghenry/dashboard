@@ -45,7 +45,10 @@ Two distinct states:
 - **Auto-offline** (`IS_ONLINE = false`): detected by failed ping; falls back to `navigator.onLine`
 - **Manual offline** (`MANUAL_OFFLINE = true`): user-toggled to save battery; skips all network calls entirely
 
-Cached data renders with a `⚡` suffix when offline. `offline.appcache` (HTML5 AppCache) caches the four static files for full offline load on Kindle.
+Cached data renders with a `⚡` suffix when offline. `offline.appcache` (HTML5 AppCache) caches all static files for full offline load on Kindle.
+
+### Static Holiday Data
+`holidays.js` contains pre-generated JP and VN public holidays for 2025–2038 (variables `HOLIDAYS_JP` and `HOLIDAYS_VN`). It is loaded before `app.js` and used by `loadHolidaysForYear` as the primary source — no API call is made for covered years. To regenerate (e.g. extend past 2038), run `node gen_holidays3.js` from the repo root (requires `npm install date-holidays` in the job temp dir). JP data for 2025–2030 comes from the `holidays-jp.github.io` API; 2031+ uses the `date-holidays` npm package.
 
 ### Version Bumping
 When modifying any cached static file, update both:
