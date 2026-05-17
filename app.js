@@ -288,11 +288,12 @@ function renderWeather(data) {
 
 function loadHolidaysForYear(yr) {
     loadedHolidayYear = yr;
-    var cachedJP = lsGet('holiday_raw_jp_' + yr);
-    var cachedVN = lsGet('holiday_raw_vn_' + yr);
-    rawHolidaysJP = cachedJP || {};
-    rawHolidaysVN = cachedVN || [];
+    var staticJP = (typeof HOLIDAYS_JP !== 'undefined' && HOLIDAYS_JP[yr]) ? HOLIDAYS_JP[yr] : null;
+    var staticVN = (typeof HOLIDAYS_VN !== 'undefined' && HOLIDAYS_VN[yr]) ? HOLIDAYS_VN[yr] : null;
+    rawHolidaysJP = staticJP || lsGet('holiday_raw_jp_' + yr) || {};
+    rawHolidaysVN = staticVN || lsGet('holiday_raw_vn_' + yr) || [];
     rebuildAndRender();
+    if (staticJP && staticVN) return; // static data covers this year — no API needed
     if (!IS_ONLINE || MANUAL_OFFLINE) return;
     if (!cachedJP) {
         var x1 = new XMLHttpRequest();

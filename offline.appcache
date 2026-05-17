@@ -1,11 +1,12 @@
 CACHE MANIFEST
-# Kindle Dashboard v1.5
+# Kindle Dashboard v1.7
 
 CACHE:
 index.html
 style.css
 app.js
 quotes.js
+holidays.js
 
 NETWORK:
 api.exchangerate-api.com
