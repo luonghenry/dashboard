@@ -236,7 +236,7 @@ function loadFX() {
         return;
     }
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'https://api.exchangerate-api.com/v4/latest/JPY', true);
+    xhr.open('GET', 'http://api.exchangerate-api.com/v4/latest/JPY', true);
     xhr.timeout = 10000;
     xhr.onreadystatechange = function() {
         if (xhr.readyState !== 4) return;
@@ -266,7 +266,7 @@ function loadWeather() {
         if (!cached) setHtml('wDesc', 'Offline');
         return;
     }
-    var url = 'https://api.open-meteo.com/v1/forecast?latitude=35.6762&longitude=139.6503&current_weather=true&hourly=relativehumidity_2m&timezone=Asia%2FTokyo';
+    var url = 'http://api.open-meteo.com/v1/forecast?latitude=35.6762&longitude=139.6503&current_weather=true&hourly=relativehumidity_2m&timezone=Asia%2FTokyo';
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, true); xhr.timeout = 10000;
     xhr.onreadystatechange = function() {
@@ -296,7 +296,7 @@ function loadHolidaysForYear(yr) {
     if (!IS_ONLINE || MANUAL_OFFLINE) return;
     if (!cachedJP) {
         var x1 = new XMLHttpRequest();
-        x1.open('GET', 'https://holidays-jp.github.io/api/v1/' + yr + '/date.json', true); x1.timeout = 10000;
+        x1.open('GET', 'http://holidays-jp.github.io/api/v1/' + yr + '/date.json', true); x1.timeout = 10000;
         x1.onreadystatechange = function() {
             if (x1.readyState !== 4) return;
             if (x1.status === 200) { try { var d = JSON.parse(x1.responseText); rawHolidaysJP = d; lsSet('holiday_raw_jp_' + yr, d); if (yr === calYear) rebuildAndRender(); } catch(e) {} }
@@ -306,7 +306,7 @@ function loadHolidaysForYear(yr) {
     }
     if (!cachedVN) {
         var x2 = new XMLHttpRequest();
-        x2.open('GET', 'https://date.nager.at/api/v3/PublicHolidays/' + yr + '/VN', true); x2.timeout = 10000;
+        x2.open('GET', 'http://date.nager.at/api/v3/PublicHolidays/' + yr + '/VN', true); x2.timeout = 10000;
         x2.onreadystatechange = function() {
             if (x2.readyState !== 4) return;
             if (x2.status === 200) { try { var d2 = JSON.parse(x2.responseText); rawHolidaysVN = d2; lsSet('holiday_raw_vn_' + yr, d2); if (yr === calYear) rebuildAndRender(); } catch(e) {} }
