@@ -113,7 +113,8 @@ body {
 .cal-wrap td.holiday { color: #c00; font-weight: bold; }
 
 .holidays { max-height: 140px; overflow-y: auto; font-size: 15px; }
-.holidays-title { font-weight: bold; border-bottom: 1px solid #000; margin-bottom: 6px; padding-bottom: 4px; font-size: 15px; }
+.holidays-title { font-weight: bold; border-bottom: 1px solid #000; margin-bottom: 6px; padding-bottom: 4px; font-size: 15px; cursor: pointer; -webkit-user-select: none; user-select: none; }
+.holidays-title #holidayToggle { float: right; font-style: normal; }
 .holiday-item { padding: 4px 0; border-bottom: 1px dotted #ccc; }
 .holiday-item:last-child { border-bottom: none; }
 
@@ -137,7 +138,10 @@ body {
 #bigTime { font-size: 160px; font-weight: bold; letter-spacing: 5px; line-height: 1; }
 #bigDate { font-size: 26px; letter-spacing: 1px; }
 
-.big-holidays { width: 100%; max-width: 800px; font-size: 18px; text-align: left; line-height: 1.7; }
+.big-holidays-wrap { width: 100%; max-width: 800px; }
+.big-holidays-hdr { font-weight: bold; font-size: 18px; border-bottom: 1px solid #000; margin-bottom: 6px; padding-bottom: 4px; cursor: pointer; -webkit-user-select: none; user-select: none; }
+.big-holidays-hdr #bigHolidayToggle { float: right; }
+.big-holidays { width: 100%; font-size: 18px; text-align: left; line-height: 1.7; }
 .bigcal { width: 100%; max-width: 800px;}
 .bigcal-nav { display: -webkit-box; display: -webkit-flex; display: flex; -webkit-box-align: center; align-items: center; margin-bottom: 8px; }
 .bigcal-title { -webkit-box-flex: 1; -webkit-flex: 1; flex: 1; text-align: center; font-size: 20px; font-weight: bold; letter-spacing: 2px; }

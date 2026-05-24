@@ -62,7 +62,7 @@
         <table id="calendar"></table>
     </div>
     <div class="holidays">
-        <div class="holidays-title">🎌 Ngày lễ tháng này</div>
+        <div class="holidays-title" onclick="toggleHolidayList()">🎌 Ngày lễ tháng này <span id="holidayToggle">▲</span></div>
         <div id="holidayList">Đang tải...</div>
     </div>
     <div class="quote">
@@ -77,7 +77,10 @@
     <div class="bigclock-wrap">
         <div id="bigTime">00:00</div>
         <div id="bigDate">----年--月--日（-）</div>
-        <div class="big-holidays" id="bigHolidayList"></div>
+        <div class="big-holidays-wrap">
+            <div class="big-holidays-hdr" onclick="toggleBigHolidayList()">🎌 Ngày lễ <span id="bigHolidayToggle">▲</span></div>
+            <div class="big-holidays" id="bigHolidayList"></div>
+        </div>
         <div class="bigcal">
             <div class="bigcal-nav">
                 <button class="bigcal-nav-btn" onclick="calPrev()">◀</button>

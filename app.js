@@ -3,7 +3,7 @@
    ES5 only — Kindle 8 / WebKit 531-534
 ══════════════════════════════════════════════ */
 
-var CACHE_VERSION = '1.4';
+var CACHE_VERSION = '1.5';
 
 /* ── Constants ── */
 var WEEKDAYS   = ['日','月','火','水','木','金','土'];
@@ -18,6 +18,8 @@ var calMonth = 0;
 var loadedHolidayYear = 0;
 var rawHolidaysJP = {};
 var rawHolidaysVN = [];
+var holidayListVisible = true;
+var bigHolidayListVisible = true;
 
 var selectedQuote = (typeof QUOTES !== 'undefined' && QUOTES.length)
     ? QUOTES[Math.floor(Math.random() * QUOTES.length)]
@@ -324,10 +326,6 @@ function rebuildHolidayDates() {
         p = ds.split('-');
         if (parseInt(p[0],10) === yr && parseInt(p[1],10) === mo) { d = parseInt(p[2],10); holidayDates[d] = true; }
     }
-    for (var i = 0; i < rawHolidaysVN.length; i++) {
-        p = rawHolidaysVN[i].date.split('-');
-        if (parseInt(p[0],10) === yr && parseInt(p[1],10) === mo) { d = parseInt(p[2],10); holidayDates[d] = true; }
-    }
 }
 
 function renderHolidayListForMonth() {
@@ -386,6 +384,22 @@ function calNext() {
     calMonth++;
     if (calMonth > 11) { calMonth = 0; calYear++; }
     if (calYear !== loadedHolidayYear) { loadHolidaysForYear(calYear); } else { rebuildAndRender(); }
+}
+
+function toggleHolidayList() {
+    holidayListVisible = !holidayListVisible;
+    var el = document.getElementById('holidayList');
+    var arrow = document.getElementById('holidayToggle');
+    if (el) el.style.display = holidayListVisible ? '' : 'none';
+    if (arrow) arrow.innerHTML = holidayListVisible ? '▲' : '▼';
+}
+
+function toggleBigHolidayList() {
+    bigHolidayListVisible = !bigHolidayListVisible;
+    var el = document.getElementById('bigHolidayList');
+    var arrow = document.getElementById('bigHolidayToggle');
+    if (el) el.style.display = bigHolidayListVisible ? '' : 'none';
+    if (arrow) arrow.innerHTML = bigHolidayListVisible ? '▲' : '▼';
 }
 
 /* ══════════════════════════════
