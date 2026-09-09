@@ -1,0 +1,49 @@
+name: Request GitHub Pages deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment_note:
+        description: 'Reason or change summary for this deployment request'
+        required: false
+        type: string
+
+jobs:
+  request:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Create deployment request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPLOYMENT_NOTE: ${{ inputs.deployment_note }}
+        run: |
+          body="$(cat <<EOF
+          <!-- dashboard-deploy-request -->
+          ## GitHub Pages deployment request
+
+          Requested by: @${{ github.actor }}
+          Requested commit: \`${{ github.sha }}\`
+          Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          Deployment note: ${DEPLOYMENT_NOTE:-Not provided}
+
+          An authorized reviewer must comment:
+
+          \`/approve-deploy Your approval comment\`
+          EOF
+          )"
+          response="$(gh api --method POST "repos/${{ github.repository }}/issues" \
+            -f title="Deployment request: ${{ github.sha }}" \
+            -f body="$body")"
+          issue_url="$(printf '%s' "$response" | jq -r '.html_url')"
+          echo "Deployment request created: $issue_url"
+          {
+            echo "## Deployment request created"
+            echo ""
+            echo "- Request: $issue_url"
+            echo "- Requested by: @${{ github.actor }}"
+            echo "- Commit: \`${{ github.sha }}\`"
+            echo "- A permitted reviewer must approve with a comment beginning \`/approve-deploy\`."
+          } >> "$GITHUB_STEP_SUMMARY"

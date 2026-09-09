@@ -1,40 +1,54 @@
 name: Deploy to GitHub Pages
 
 on:
-  push:
-    branches: [ main ]
+  issue_comment:
+    types: [created]
 
 jobs:
   deploy:
+    if: >-
+      github.event.issue.pull_request == null &&
+      startsWith(github.event.comment.body, '/approve-deploy') &&
+      contains(github.event.issue.body, '<!-- dashboard-deploy-request -->') &&
+      (github.event.comment.author_association == 'OWNER' ||
+      github.event.comment.author_association == 'MEMBER' ||
+      github.event.comment.author_association == 'COLLABORATOR')
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      issues: write
       pages: write
       id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Record deployment approval context
+      - name: Read deployment request
+        id: request
+        env:
+          REQUEST_BODY: ${{ github.event.issue.body }}
         run: |
-          echo "Deployment approval gate passed for environment: github-pages"
-          echo "Workflow trigger actor: @${{ github.actor }}"
-          echo "Current triggering actor: @${{ github.triggering_actor }}"
-          echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          echo "Environment approval reviewer is recorded by GitHub in the Deployment/Environment details."
-          {
-            echo "## Deployment approval gate passed"
-            echo ""
-            echo "- Environment: \`github-pages\`"
-            echo "- Workflow run: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-            echo "- Commit: \`${{ github.sha }}\`"
-            echo "- Branch: \`${{ github.ref_name }}\`"
-            echo "- Workflow trigger actor: @${{ github.actor }}"
-            echo "- Current triggering actor: @${{ github.triggering_actor }}"
-            echo "- Environment approval reviewer: recorded by GitHub in the Deployment/Environment details"
-          } >> "$GITHUB_STEP_SUMMARY"
+          commit="$(printf '%s\n' "$REQUEST_BODY" | sed -n 's/.*Requested commit: `\([^`]*\)`.*/\1/p' | head -n 1)"
+          if ! printf '%s\n' "$commit" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "Deployment request does not contain a commit SHA." >&2
+            exit 1
+          fi
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+
+      - name: Record comment approval
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APPROVER: ${{ github.event.comment.user.login }}
+          COMMENT_URL: ${{ github.event.comment.html_url }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          REQUEST_URL: ${{ github.event.issue.html_url }}
+        run: |
+          echo "Deployment approved by: @$APPROVER"
+          echo "Approval comment: $COMMENT_URL"
+          echo "Approval text: $COMMENT_BODY"
+          gh api --method POST "repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
+            -f body="Deployment started after approval by @$APPROVER. Approval comment: $COMMENT_URL"
 
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.request.outputs.commit }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -42,8 +56,80 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: '.'      # Upload toàn bộ folder root
+          path: '.'
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Create deployment evidence
+        if: always()
+        env:
+          APPROVER: ${{ github.event.comment.user.login }}
+          APPROVER_ASSOCIATION: ${{ github.event.comment.author_association }}
+          COMMENT_URL: ${{ github.event.comment.html_url }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          REQUEST_URL: ${{ github.event.issue.html_url }}
+        run: |
+          mkdir -p deployment-evidence
+          {
+            echo "# Comment-approved deployment evidence"
+            echo ""
+            echo "- Repository: ${{ github.repository }}"
+            echo "- Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "- Commit: \`${{ steps.request.outputs.commit }}\`"
+            echo "- Approval request: $REQUEST_URL"
+            echo "- Approved by: @$APPROVER"
+            echo "- Reviewer association: $APPROVER_ASSOCIATION"
+            echo "- Approval comment: $COMMENT_URL"
+            echo "- Approval comment timestamp: ${{ github.event.comment.created_at }}"
+            echo "- Approval comment text:"
+            echo ""
+            echo '```text'
+            printf '%s\n' "$COMMENT_BODY"
+            echo '```'
+            echo ""
+            echo "- Deploy step result: ${{ steps.deployment.outcome }}"
+            echo "- Published site: ${{ steps.deployment.outputs.page_url }}"
+          } > deployment-evidence/deployment-evidence.md
+          jq -n \
+            --arg repository "${{ github.repository }}" \
+            --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg commit "${{ steps.request.outputs.commit }}" \
+            --arg request_url "$REQUEST_URL" \
+            --arg approver "$APPROVER" \
+            --arg approver_association "$APPROVER_ASSOCIATION" \
+            --arg comment_url "$COMMENT_URL" \
+            --arg comment_body "$COMMENT_BODY" \
+            --arg comment_created_at "${{ github.event.comment.created_at }}" \
+            --arg deploy_step_result "${{ steps.deployment.outcome }}" \
+            --arg published_site "${{ steps.deployment.outputs.page_url }}" \
+            '{
+              repository: $repository,
+              run_url: $run_url,
+              commit: $commit,
+              request_url: $request_url,
+              approver: $approver,
+              approver_association: $approver_association,
+              approval_comment_url: $comment_url,
+              approval_comment_body: $comment_body,
+              approval_comment_created_at: $comment_created_at,
+              deploy_step_result: $deploy_step_result,
+              published_site: $published_site
+            }' > deployment-evidence/deployment-evidence.json
+
+      - name: Upload deployment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: deployment-evidence/
+          retention-days: 90
+
+      - name: Close approved deployment request
+        if: steps.deployment.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method PATCH "repos/${{ github.repository }}/issues/${{ github.event.issue.number }}" \
+            -f state=closed
