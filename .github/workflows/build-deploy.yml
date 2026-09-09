@@ -1,8 +1,12 @@
 name: Deploy to GitHub Pages
 
 on:
-  push:
-    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      deployment_note:
+        description: 'Reason or change summary for this manual deployment'
+        required: false
+        type: string
 
 jobs:
   deploy:
@@ -16,10 +20,13 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Record deployment approval context
+        env:
+          DEPLOYMENT_NOTE: ${{ inputs.deployment_note }}
         run: |
           echo "Deployment approval gate passed for environment: github-pages"
           echo "Workflow trigger actor: @${{ github.actor }}"
           echo "Current triggering actor: @${{ github.triggering_actor }}"
+          echo "Manual deployment note: ${DEPLOYMENT_NOTE:-Not provided}"
           echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           echo "Environment approval reviewer is recorded by GitHub in the Deployment/Environment details."
           {
@@ -31,6 +38,7 @@ jobs:
             echo "- Branch: \`${{ github.ref_name }}\`"
             echo "- Workflow trigger actor: @${{ github.actor }}"
             echo "- Current triggering actor: @${{ github.triggering_actor }}"
+            echo "- Manual deployment note: ${DEPLOYMENT_NOTE:-Not provided}"
             echo "- Environment approval reviewer: recorded by GitHub in the Deployment/Environment details"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -47,3 +55,70 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Create deployment evidence
+        if: always()
+        env:
+          DEPLOYMENT_NOTE: ${{ inputs.deployment_note }}
+        run: |
+          mkdir -p deployment-evidence
+          cat > deployment-evidence/deployment-evidence.md <<EOF
+          # Manual deployment evidence
+
+          - Repository: ${{ github.repository }}
+          - Workflow: ${{ github.workflow }}
+          - Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          - Run number: ${{ github.run_number }}
+          - Run attempt: ${{ github.run_attempt }}
+          - Commit: ${{ github.sha }}
+          - Branch: ${{ github.ref_name }}
+          - Started at: ${{ github.run_started_at }}
+          - Trigger actor: @${{ github.actor }}
+          - Current triggering actor: @${{ github.triggering_actor }}
+          - Manual deployment note: ${DEPLOYMENT_NOTE:-Not provided}
+          - Deploy step result: ${{ steps.deployment.outcome }}
+          - Published site: ${{ steps.deployment.outputs.page_url }}
+          - Environment: github-pages
+          - Environment approval reviewer: retained by GitHub in Deployment/Environment details; not exposed to workflow steps
+          EOF
+          jq -n \
+            --arg repository "${{ github.repository }}" \
+            --arg workflow "${{ github.workflow }}" \
+            --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg run_id "${{ github.run_id }}" \
+            --arg run_number "${{ github.run_number }}" \
+            --arg run_attempt "${{ github.run_attempt }}" \
+            --arg commit "${{ github.sha }}" \
+            --arg branch "${{ github.ref_name }}" \
+            --arg run_started_at "${{ github.run_started_at }}" \
+            --arg trigger_actor "${{ github.actor }}" \
+            --arg current_triggering_actor "${{ github.triggering_actor }}" \
+            --arg deployment_note "$DEPLOYMENT_NOTE" \
+            --arg deploy_step_result "${{ steps.deployment.outcome }}" \
+            --arg published_site "${{ steps.deployment.outputs.page_url }}" \
+            '{
+              repository: $repository,
+              workflow: $workflow,
+              run_url: $run_url,
+              run_id: $run_id,
+              run_number: $run_number,
+              run_attempt: $run_attempt,
+              commit: $commit,
+              branch: $branch,
+              run_started_at: $run_started_at,
+              trigger_actor: $trigger_actor,
+              current_triggering_actor: $current_triggering_actor,
+              deployment_note: $deployment_note,
+              deploy_step_result: $deploy_step_result,
+              published_site: $published_site,
+              environment: "github-pages",
+              environment_approval_reviewer: "Available in GitHub Deployment/Environment details; not exposed to workflow steps"
+            }' > deployment-evidence/deployment-evidence.json
+
+      - name: Upload deployment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: deployment-evidence/
+          retention-days: 90
