@@ -50,6 +50,21 @@ body {
     cursor: pointer;
     font-weight: bold;
 }
+.screen-preset-label {
+    margin-left: auto;
+    margin-right: 4px;
+    font-size: 12px;
+    font-weight: bold;
+}
+#screenPreset {
+    margin-right: 10px;
+    padding: 4px 6px;
+    font-size: 12px;
+    font-family: Bookerly, Georgia, serif;
+    border: 1px solid #000;
+    background: #fff;
+    max-width: 170px;
+}
 
 /* ══════════════════════════════
    TABS
@@ -296,3 +311,45 @@ body {
     .pomo-ring-wrap { width: 180px; height: 180px; }
     .pomo-time      { font-size: 36px; }
 }
+
+/* Manual screen presets */
+body.screen-kindle8 { max-width: 600px; font-size: 12px; }
+body.screen-kindle8 .tab-content { padding: 10px; }
+body.screen-kindle8 #statusWrap { font-size: 11px; }
+body.screen-kindle8 .screen-preset-label,
+body.screen-kindle8 #screenPreset { font-size: 10px; }
+body.screen-kindle8 #screenPreset { max-width: 120px; }
+
+body.screen-paperwhite { max-width: 1100px; font-size: 16px; }
+
+body.screen-fhd { max-width: 1700px; font-size: 18px; }
+body.screen-fhd .tab-content { padding: 24px; }
+body.screen-fhd .tab-btn { height: 64px; font-size: 17px; }
+body.screen-fhd #time { font-size: 92px; }
+body.screen-fhd #bigTime { font-size: 210px; }
+body.screen-fhd .bigcal td { height: 64px; font-size: 24px; }
+body.screen-fhd .bigcal th { font-size: 24px; }
+body.screen-fhd .calc { max-width: 720px; }
+
+body.screen-2k { max-width: 2200px; font-size: 20px; }
+body.screen-2k .tab-content { padding: 30px; }
+body.screen-2k .tab-btn { height: 72px; font-size: 20px; }
+body.screen-2k #time { font-size: 112px; }
+body.screen-2k #bigTime { font-size: 260px; }
+body.screen-2k .bigcal { max-width: 1100px; }
+body.screen-2k .bigcal td { height: 78px; font-size: 30px; }
+body.screen-2k .bigcal th { font-size: 30px; }
+body.screen-2k .calc { max-width: 900px; }
+
+body.screen-4k { max-width: 3200px; font-size: 24px; }
+body.screen-4k .tab-content { padding: 42px; }
+body.screen-4k .tab-btn { height: 86px; font-size: 25px; }
+body.screen-4k #time { font-size: 142px; }
+body.screen-4k #bigTime { font-size: 330px; }
+body.screen-4k .bigclock-wrap { min-height: 78vh; }
+body.screen-4k .big-holidays-wrap,
+body.screen-4k .bigcal,
+body.screen-4k .big-quote { max-width: 1400px; }
+body.screen-4k .bigcal td { height: 100px; font-size: 38px; }
+body.screen-4k .bigcal th { font-size: 38px; }
+body.screen-4k .calc { max-width: 1100px; }

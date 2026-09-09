@@ -3,7 +3,7 @@
    ES5 only — Kindle 8 / WebKit 531-534
 ══════════════════════════════════════════════ */
 
-var CACHE_VERSION = '1.6';
+var CACHE_VERSION = '1.7';
 
 /* ── Constants ── */
 var WEEKDAYS   = ['日','月','火','水','木','金','土'];
@@ -23,6 +23,14 @@ var rawHolidaysJP = {};
 var rawHolidaysVN = [];
 var holidayListVisible = true;
 var bigHolidayListVisible = true;
+var SCREEN_PRESET_KEY = 'screen_preset';
+var SCREEN_PRESETS = {
+    kindle8: true,
+    paperwhite: true,
+    fhd: true,
+    '2k': true,
+    '4k': true
+};
 
 var selectedQuote = (typeof QUOTES !== 'undefined' && QUOTES.length)
     ? QUOTES[Math.floor(Math.random() * QUOTES.length)]
@@ -64,6 +72,20 @@ function getWMO(code) {
 
 function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {} }
 function lsGet(key) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch(e) { return null; } }
+
+function applyScreenPreset(preset) {
+    var select = byId('screenPreset');
+    var body = document.body;
+    if (!SCREEN_PRESETS[preset]) preset = 'paperwhite';
+    body.className = body.className.replace(/\bscreen-\S+/g, '').replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+    body.className += (body.className ? ' ' : '') + 'screen-' + preset;
+    if (select) select.value = preset;
+    lsSet(SCREEN_PRESET_KEY, preset);
+}
+
+function changeScreenPreset(preset) {
+    applyScreenPreset(preset);
+}
 
 function checkCacheVersion() {
     var saved = lsGet('cache_version');
@@ -541,6 +563,7 @@ function pomoDone() {
 function init() {
     checkCacheVersion();
     initAppCache();
+    applyScreenPreset(lsGet(SCREEN_PRESET_KEY) || 'paperwhite');
 
     if (typeof navigator.onLine !== 'undefined') IS_ONLINE = navigator.onLine;
     updateStatusBar();

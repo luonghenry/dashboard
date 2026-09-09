@@ -23,6 +23,14 @@
 <!-- Nút chuyển đổi Online/Offline -->
 <div id="statusWrap">
     <div id="onlineStatus" class="status-online">🟢 Online</div>
+    <label class="screen-preset-label" for="screenPreset">Màn hình</label>
+    <select id="screenPreset" onchange="changeScreenPreset(this.value)">
+        <option value="kindle8">Kindle 8</option>
+        <option value="paperwhite">Kindle Paperwhite</option>
+        <option value="fhd">Full HD</option>
+        <option value="2k">2K</option>
+        <option value="4k">4K</option>
+    </select>
     <button id="toggleNetBtn" onclick="toggleNetworkMode()">Chuyển Offline</button>
 </div>
 
