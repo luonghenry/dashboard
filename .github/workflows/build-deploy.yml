@@ -7,9 +7,8 @@ on:
 jobs:
   deploy:
     if: >-
-      github.event.issue.pull_request == null &&
       startsWith(github.event.comment.body, '/approve-deploy') &&
-      contains(github.event.issue.body, '<!-- dashboard-deploy-request -->') &&
+      github.event.issue.pull_request != null &&
       (github.event.comment.author_association == 'OWNER' ||
       github.event.comment.author_association == 'MEMBER' ||
       github.event.comment.author_association == 'COLLABORATOR')
@@ -17,17 +16,25 @@ jobs:
     permissions:
       contents: read
       issues: write
+      pull-requests: read
       pages: write
       id-token: write
     steps:
       - name: Read deployment request
         id: request
         env:
-          REQUEST_BODY: ${{ github.event.issue.body }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          CURRENT_COMMENT_ID: ${{ github.event.comment.id }}
+        shell: bash
         run: |
-          commit="$(printf '%s\n' "$REQUEST_BODY" | sed -n 's/.*Requested commit: `\([^`]*\)`.*/\1/p' | head -n 1)"
+          comments="$(gh api "repos/${{ github.repository }}/issues/$PR_NUMBER/comments?per_page=100")"
+          commit="$(printf '%s' "$comments" | jq -r --argjson current "$CURRENT_COMMENT_ID" '
+            [.[] | select(.id < $current and (.body | contains("<!-- dashboard-deploy-request -->")))]
+            | sort_by(.created_at) | last
+            | (.body // "")' | sed -n 's/.*Requested commit: `\([^`]*\)`.*/\1/p' | head -n 1)"
           if ! printf '%s\n' "$commit" | grep -Eq '^[0-9a-f]{40}$'; then
-            echo "Deployment request does not contain a commit SHA." >&2
+            echo "No valid deployment request comment was found before this approval." >&2
             exit 1
           fi
           echo "commit=$commit" >> "$GITHUB_OUTPUT"
@@ -38,7 +45,7 @@ jobs:
           APPROVER: ${{ github.event.comment.user.login }}
           COMMENT_URL: ${{ github.event.comment.html_url }}
           COMMENT_BODY: ${{ github.event.comment.body }}
-          REQUEST_URL: ${{ github.event.issue.html_url }}
+          REQUEST_URL: https://github.com/${{ github.repository }}/pull/${{ github.event.issue.number }}
         run: |
           echo "Deployment approved by: @$APPROVER"
           echo "Approval comment: $COMMENT_URL"
@@ -69,7 +76,7 @@ jobs:
           APPROVER_ASSOCIATION: ${{ github.event.comment.author_association }}
           COMMENT_URL: ${{ github.event.comment.html_url }}
           COMMENT_BODY: ${{ github.event.comment.body }}
-          REQUEST_URL: ${{ github.event.issue.html_url }}
+          REQUEST_URL: https://github.com/${{ github.repository }}/pull/${{ github.event.issue.number }}
         run: |
           mkdir -p deployment-evidence
           {
@@ -125,11 +132,3 @@ jobs:
           name: deployment-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           path: deployment-evidence/
           retention-days: 90
-
-      - name: Close approved deployment request
-        if: steps.deployment.outcome == 'success'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh api --method PATCH "repos/${{ github.repository }}/issues/${{ github.event.issue.number }}" \
-            -f state=closed
