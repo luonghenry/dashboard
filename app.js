@@ -3,7 +3,7 @@
    ES5 only — Kindle 8 / WebKit 531-534
 ══════════════════════════════════════════════ */
 
-var CACHE_VERSION = '1.7';
+var CACHE_VERSION = '1.8';
 
 /* ── Constants ── */
 var WEEKDAYS   = ['日','月','火','水','木','金','土'];
