@@ -3,6 +3,10 @@ name: Request GitHub Pages deployment
 on:
   workflow_dispatch:
     inputs:
+      pull_request_number:
+        description: 'Open or merged PR number to use for the deployment approval comment'
+        required: true
+        type: string
       deployment_note:
         description: 'Reason or change summary for this deployment request'
         required: false
@@ -13,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      issues: write
+      pull-requests: write
     steps:
       - name: Create deployment request
         env:
@@ -34,15 +38,15 @@ jobs:
           \`/approve-deploy Your approval comment\`
           EOF
           )"
-          response="$(gh api --method POST "repos/${{ github.repository }}/issues" \
-            -f title="Deployment request: ${{ github.sha }}" \
+          response="$(gh api --method POST "repos/${{ github.repository }}/issues/${{ inputs.pull_request_number }}/comments" \
             -f body="$body")"
-          issue_url="$(printf '%s' "$response" | jq -r '.html_url')"
-          echo "Deployment request created: $issue_url"
+          comment_url="$(printf '%s' "$response" | jq -r '.html_url')"
+          echo "Deployment request comment created: $comment_url"
           {
-            echo "## Deployment request created"
+            echo "## Deployment request comment created"
             echo ""
-            echo "- Request: $issue_url"
+            echo "- Pull request: https://github.com/${{ github.repository }}/pull/${{ inputs.pull_request_number }}"
+            echo "- Request comment: $comment_url"
             echo "- Requested by: @${{ github.actor }}"
             echo "- Commit: \`${{ github.sha }}\`"
             echo "- A permitted reviewer must approve with a comment beginning \`/approve-deploy\`."
