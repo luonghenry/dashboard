@@ -3,7 +3,7 @@
    ES5 only — Kindle 8 / WebKit 531-534
 ══════════════════════════════════════════════ */
 
-var CACHE_VERSION = '1.5';
+var CACHE_VERSION = '1.6';
 
 /* ── Constants ── */
 var WEEKDAYS   = ['日','月','火','水','木','金','土'];
@@ -15,6 +15,9 @@ var apiIntervalId = null;
 var holidayDates  = {};
 var calYear = 0;
 var calMonth = 0;
+var lastClockYear = 0;
+var lastClockMonth = 0;
+var lastClockDay = 0;
 var loadedHolidayYear = 0;
 var rawHolidaysJP = {};
 var rawHolidaysVN = [];
@@ -214,6 +217,19 @@ function switchTab(idx) {
 function updateClock() {
     var t=getJST(), h=pad(t.getHours()), m=pad(t.getMinutes()), s=pad(t.getSeconds());
     var yr=t.getFullYear(), mo=pad(t.getMonth()+1), dy=pad(t.getDate()), wd=WEEKDAYS[t.getDay()];
+    var dateChanged = yr !== lastClockYear || t.getMonth() !== lastClockMonth || t.getDate() !== lastClockDay;
+    if (dateChanged) {
+        var followsCurrentMonth = calYear === lastClockYear && calMonth === lastClockMonth;
+        if (followsCurrentMonth) {
+            calYear = yr;
+            calMonth = t.getMonth();
+            if (calYear !== loadedHolidayYear) loadHolidaysForYear(calYear);
+            else rebuildAndRender();
+        }
+        lastClockYear = yr;
+        lastClockMonth = t.getMonth();
+        lastClockDay = t.getDate();
+    }
     setHtml('time', h+':'+m+':'+s);
     setHtml('date', yr+'年'+mo+'月'+dy+'日（'+wd+'）');
     setHtml('bigTime', h+':'+m);
