@@ -73,10 +73,19 @@ function getWMO(code) {
 function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {} }
 function lsGet(key) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch(e) { return null; } }
 
+function detectScreenPreset() {
+    var width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth || 0;
+    if (width < 700) return 'kindle8';
+    if (width < 1200) return 'paperwhite';
+    if (width < 1800) return 'fhd';
+    if (width < 2600) return '2k';
+    return '4k';
+}
+
 function applyScreenPreset(preset) {
     var select = byId('screenPreset');
     var body = document.body;
-    if (!SCREEN_PRESETS[preset]) preset = 'paperwhite';
+    if (!SCREEN_PRESETS[preset]) preset = detectScreenPreset();
     body.className = body.className.replace(/\bscreen-\S+/g, '').replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
     body.className += (body.className ? ' ' : '') + 'screen-' + preset;
     if (select) select.value = preset;
@@ -85,6 +94,12 @@ function applyScreenPreset(preset) {
 
 function changeScreenPreset(preset) {
     applyScreenPreset(preset);
+}
+
+function refreshAutoScreenPreset() {
+    var savedPreset = lsGet(SCREEN_PRESET_KEY);
+    if (savedPreset && SCREEN_PRESETS[savedPreset]) return;
+    applyScreenPreset(detectScreenPreset());
 }
 
 function checkCacheVersion() {
@@ -563,7 +578,7 @@ function pomoDone() {
 function init() {
     checkCacheVersion();
     initAppCache();
-    applyScreenPreset(lsGet(SCREEN_PRESET_KEY) || 'paperwhite');
+    refreshAutoScreenPreset();
 
     if (typeof navigator.onLine !== 'undefined') IS_ONLINE = navigator.onLine;
     updateStatusBar();
@@ -583,6 +598,9 @@ function init() {
     startNetworkIntervals();
 
     if (window.addEventListener) {
+        window.addEventListener('resize', function() {
+            refreshAutoScreenPreset();
+        });
         window.addEventListener('online', function() {
             if (MANUAL_OFFLINE) return;
             IS_ONLINE = true; updateStatusBar();
