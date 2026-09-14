@@ -1,0 +1,600 @@
+/* ══════════════════════════════════════════════
+   Kindle Dashboard — app.js  v1.4
+   ES5 only — Kindle 8 / WebKit 531-534
+══════════════════════════════════════════════ */
+
+var CACHE_VERSION = '1.8';
+
+/* ── Constants ── */
+var WEEKDAYS   = ['日','月','火','水','木','金','土'];
+var JST_OFFSET = 9 * 60;
+var IS_ONLINE  = true;
+var MANUAL_OFFLINE = false; /* Biến lưu trạng thái người dùng chủ động ngắt mạng */
+var pingIntervalId = null;
+var apiIntervalId = null;
+var holidayDates  = {};
+var calYear = 0;
+var calMonth = 0;
+var lastClockYear = 0;
+var lastClockMonth = 0;
+var lastClockDay = 0;
+var loadedHolidayYear = 0;
+var rawHolidaysJP = {};
+var rawHolidaysVN = [];
+var holidayListVisible = true;
+var bigHolidayListVisible = true;
+var SCREEN_PRESET_KEY = 'screen_preset';
+var SCREEN_PRESETS = {
+    kindle8: true,
+    paperwhite: true,
+    fhd: true,
+    '2k': true,
+    '4k': true
+};
+
+var selectedQuote = (typeof QUOTES !== 'undefined' && QUOTES.length)
+    ? QUOTES[Math.floor(Math.random() * QUOTES.length)]
+    : ["Hãy bắt đầu từ nơi bạn đang đứng.", "Khuyết danh"];
+
+var WMO = {
+    0:['☀️','Trời quang'],1:['🌤️','Ít mây'],2:['⛅','Có mây'],3:['☁️','Nhiều mây'],
+    45:['🌫️','Sương mù'],48:['🌫️','Sương đá'],51:['🌦️','Mưa phùn nhẹ'],53:['🌦️','Mưa phùn'],
+    55:['🌧️','Mưa phùn dày'],61:['🌧️','Mưa nhẹ'],63:['🌧️','Mưa vừa'],65:['🌧️','Mưa to'],
+    71:['🌨️','Tuyết nhẹ'],73:['🌨️','Tuyết vừa'],75:['❄️','Tuyết dày'],
+    80:['🌦️','Mưa rào nhẹ'],81:['🌧️','Mưa rào'],82:['⛈️','Mưa rào to'],
+    95:['⛈️','Dông bão'],96:['⛈️','Dông+mưa đá'],99:['⛈️','Dông lớn']
+};
+
+function pad(n)        { return n < 10 ? '0' + n : '' + n; }
+function byId(id)      { return document.getElementById(id); }
+function setHtml(id,h) { var el = byId(id); if (el) el.innerHTML = h; }
+
+function qsa(sel) {
+    var nl = document.querySelectorAll(sel), arr = [];
+    for (var i = 0; i < nl.length; i++) arr.push(nl[i]);
+    return arr;
+}
+
+function getJST() {
+    var now = new Date();
+    return new Date(now.getTime() + (now.getTimezoneOffset() + JST_OFFSET) * 60000);
+}
+
+function getWMO(code) {
+    if (WMO[code]) return WMO[code];
+    if (code <= 3) return ['⛅','Có mây'];
+    if (code <= 55) return ['🌦️','Mưa phùn'];
+    if (code <= 65) return ['🌧️','Mưa'];
+    if (code <= 77) return ['🌨️','Tuyết'];
+    if (code <= 82) return ['🌦️','Mưa rào'];
+    return ['⛈️','Dông bão'];
+}
+
+function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {} }
+function lsGet(key) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch(e) { return null; } }
+
+function applyScreenPreset(preset) {
+    var select = byId('screenPreset');
+    var body = document.body;
+    if (!SCREEN_PRESETS[preset]) preset = 'paperwhite';
+    body.className = body.className.replace(/\bscreen-\S+/g, '').replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+    body.className += (body.className ? ' ' : '') + 'screen-' + preset;
+    if (select) select.value = preset;
+    lsSet(SCREEN_PRESET_KEY, preset);
+}
+
+function changeScreenPreset(preset) {
+    applyScreenPreset(preset);
+}
+
+function checkCacheVersion() {
+    var saved = lsGet('cache_version');
+    if (!saved || saved !== CACHE_VERSION) {
+        try {
+            localStorage.removeItem('fx_data');
+            localStorage.removeItem('weather_data');
+            localStorage.removeItem('holiday_data');
+        } catch(e) {}
+        lsSet('cache_version', CACHE_VERSION);
+    }
+}
+
+function initAppCache() {
+    if (!window.applicationCache) return;
+    var ac = window.applicationCache;
+    ac.addEventListener('updateready', function() {
+        if (ac.status === ac.UPDATEREADY) {
+            try { ac.swapCache(); } catch(e) {}
+            window.location.reload();
+        }
+    }, false);
+    if (IS_ONLINE && !MANUAL_OFFLINE) { try { ac.update(); } catch(e) {} }
+}
+
+/* ══════════════════════════════
+   NETWORK MODE SWITCH
+══════════════════════════════ */
+function updateStatusBar() {
+    var el = byId('onlineStatus');
+    var btn = byId('toggleNetBtn');
+    if (!el || !btn) return;
+    
+    if (MANUAL_OFFLINE) {
+        el.innerHTML = '📴 Chế độ Offline (Tiết kiệm pin)';
+        el.className = 'status-offline';
+        btn.innerHTML = 'Bật Mạng';
+    } else if (IS_ONLINE) {
+        el.innerHTML = '🟢 Online';
+        el.className = 'status-online';
+        btn.innerHTML = 'Tắt Mạng';
+    } else {
+        el.innerHTML = '🔴 Mất kết nối mạng';
+        el.className = 'status-offline';
+        btn.innerHTML = 'Tắt Mạng';
+    }
+}
+
+function toggleNetworkMode() {
+    MANUAL_OFFLINE = !MANUAL_OFFLINE;
+    
+    if (MANUAL_OFFLINE) {
+        /* Chuyển sang Offline: Dừng ping và API calls */
+        IS_ONLINE = false;
+        clearInterval(pingIntervalId);
+        clearInterval(apiIntervalId);
+    } else {
+        /* Chuyển sang Online: Thử ping lại ngay lập tức và khởi động lại interval */
+        IS_ONLINE = true; /* Tạm thời gán true để pingCheck thực thi */
+        pingCheck();
+        startNetworkIntervals();
+    }
+    updateStatusBar();
+}
+/* ══════════════════════════════
+   NETWORK MODE SWITCH & PING
+══════════════════════════════ */
+function pingCheck() {
+    if (MANUAL_OFFLINE) return;
+    
+    /* Trên thiết bị siêu cũ như Kindle, gọi API ngoài (như open-meteo) để ping 
+       dễ dính lỗi CORS/SSL (thường văng mã lỗi status 0). 
+       Nên ta sẽ fallback về cơ chế an toàn hơn: ping Google (dùng http để tránh lỗi chứng chỉ SSL)
+       hoặc tốt nhất là gán thẳng navigator.onLine nếu ping lỗi. */
+       
+    var xhr = new XMLHttpRequest();
+    // Sử dụng URL HTTP trần (không 'S') của trang có SSL siêu tương thích để tránh lỗi chứng chỉ
+    xhr.open('HEAD', 'http://captive.apple.com/hotspot-detect.html?_=' + Date.now(), true);
+    xhr.timeout = 5000;
+    
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4) return;
+        
+        var wasOnline = IS_ONLINE;
+        
+        // Nếu status = 0 trên Kindle cũ, có thể do bị block chéo domain (CORS). 
+        // Thay vì đánh rớt mạng lập tức, ta tin cậy vào navigator.onLine nếu nó báo true.
+        if (xhr.status > 0 && xhr.status < 500) {
+            IS_ONLINE = true;
+        } else {
+            // Rơi vào trường hợp lỗi status 0 (Cors/SSL block)
+            if (typeof navigator.onLine !== 'undefined') {
+                IS_ONLINE = navigator.onLine; // Tin vào thiết bị
+            } else {
+                IS_ONLINE = false; 
+            }
+        }
+        
+        updateStatusBar();
+        
+        if (!wasOnline && IS_ONLINE && !MANUAL_OFFLINE) {
+            loadFX();
+            loadWeather();
+            loadHolidaysForYear(calYear);
+            if (window.applicationCache) { 
+                try { window.applicationCache.update(); } catch(e) {} 
+            }
+        }
+    };
+    
+    xhr.ontimeout = function() { 
+        if (typeof navigator.onLine !== 'undefined') IS_ONLINE = navigator.onLine;
+        else IS_ONLINE = false; 
+        updateStatusBar(); 
+    };
+    
+    xhr.onerror = function() { 
+        if (typeof navigator.onLine !== 'undefined') IS_ONLINE = navigator.onLine;
+        else IS_ONLINE = false; 
+        updateStatusBar(); 
+    };
+    
+    try { 
+        xhr.send(); 
+    } catch(e) { 
+        if (typeof navigator.onLine !== 'undefined') IS_ONLINE = navigator.onLine;
+        else IS_ONLINE = false; 
+        updateStatusBar(); 
+    }
+}
+
+
+
+function startNetworkIntervals() {
+    clearInterval(pingIntervalId);
+    clearInterval(apiIntervalId);
+    
+    pingIntervalId = setInterval(pingCheck, 2 * 60 * 1000); // Ping mỗi 2 phút
+    apiIntervalId = setInterval(function() {
+        if (IS_ONLINE && !MANUAL_OFFLINE) { loadFX(); loadWeather(); }
+    }, 30 * 60 * 1000); // Tải data mỗi 30 phút
+}
+
+function switchTab(idx) {
+    var tabs = qsa('.tab-content');
+    var btns = qsa('.tab-btn');
+    for (var i = 0; i < tabs.length; i++) tabs[i].className = (i === idx) ? 'tab-content active' : 'tab-content';
+    for (var i = 0; i < btns.length; i++) btns[i].className = (i === idx) ? 'tab-btn active' : 'tab-btn';
+}
+
+function updateClock() {
+    var t=getJST(), h=pad(t.getHours()), m=pad(t.getMinutes()), s=pad(t.getSeconds());
+    var yr=t.getFullYear(), mo=pad(t.getMonth()+1), dy=pad(t.getDate()), wd=WEEKDAYS[t.getDay()];
+    var dateChanged = yr !== lastClockYear || t.getMonth() !== lastClockMonth || t.getDate() !== lastClockDay;
+    if (dateChanged) {
+        var followsCurrentMonth = calYear === lastClockYear && calMonth === lastClockMonth;
+        if (followsCurrentMonth) {
+            calYear = yr;
+            calMonth = t.getMonth();
+            if (calYear !== loadedHolidayYear) loadHolidaysForYear(calYear);
+            else rebuildAndRender();
+        }
+        lastClockYear = yr;
+        lastClockMonth = t.getMonth();
+        lastClockDay = t.getDate();
+    }
+    setHtml('time', h+':'+m+':'+s);
+    setHtml('date', yr+'年'+mo+'月'+dy+'日（'+wd+'）');
+    setHtml('bigTime', h+':'+m);
+    setHtml('bigDate', yr+'年'+mo+'月'+dy+'日（'+wd+'）');
+    setHtml('footerTime', '更新 '+h+':'+m);
+}
+
+function showQuote() {
+    var q = '"' + selectedQuote[0] + '"', a = '— ' + selectedQuote[1];
+    setHtml('quoteText', q); setHtml('quoteAuthor', a);
+    setHtml('bigQuoteText', q); setHtml('bigQuoteAuthor', a);
+}
+
+function loadFX() {
+    var cached = lsGet('fx_data');
+    if (cached) {
+        setHtml('fxrate', cached.rate + ' VND');
+        setHtml('fxtime', cached.time + (IS_ONLINE && !MANUAL_OFFLINE ? '' : ' ⚡'));
+    }
+    if (!IS_ONLINE || MANUAL_OFFLINE) {
+        if (!cached) setHtml('fxrate', '--- (offline)');
+        return;
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'http://api.exchangerate-api.com/v4/latest/JPY', true);
+    xhr.timeout = 10000;
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4) return;
+        if (xhr.status === 200) {
+            try {
+                var d = JSON.parse(xhr.responseText);
+                if (!d.rates || !d.rates.VND) return;
+                var rate = Math.round(d.rates.VND * 100) / 100, t = getJST();
+                var time = pad(t.getHours()) + ':' + pad(t.getMinutes());
+                setHtml('fxrate', rate + ' VND'); setHtml('fxtime', time);
+                lsSet('fx_data', { rate: rate, time: time });
+            } catch(e) {}
+        }
+    };
+    xhr.onerror = xhr.ontimeout = function() {};
+    xhr.send();
+}
+
+function loadWeather() {
+    var cached = lsGet('weather_data');
+    if (cached) {
+        setHtml('wTemp', cached.temp); setHtml('wIcon', cached.icon);
+        setHtml('wDesc', cached.desc + (IS_ONLINE && !MANUAL_OFFLINE ? '' : ' ⚡'));
+        setHtml('wWind', cached.wind); setHtml('wHumidity', cached.hum);
+    }
+    if (!IS_ONLINE || MANUAL_OFFLINE) {
+        if (!cached) setHtml('wDesc', 'Offline');
+        return;
+    }
+    var url = 'http://api.open-meteo.com/v1/forecast?latitude=35.6762&longitude=139.6503&current_weather=true&hourly=relativehumidity_2m&timezone=Asia%2FTokyo';
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true); xhr.timeout = 10000;
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4) return;
+        if (xhr.status === 200) { try { renderWeather(JSON.parse(xhr.responseText)); } catch(e) {} }
+    };
+    xhr.onerror = xhr.ontimeout = function() {};
+    xhr.send();
+}
+
+function renderWeather(data) {
+    var cw = data.current_weather, wmo = getWMO(cw.weathercode), hr = getJST().getHours();
+    var temp = Math.round(cw.temperature) + '°C', wind = Math.round(cw.windspeed) + ' km/h';
+    var hum = (data.hourly && data.hourly.relativehumidity_2m) ? (data.hourly.relativehumidity_2m[hr] || '--') + '%' : '--%';
+    setHtml('wTemp', temp); setHtml('wIcon', wmo[0]); setHtml('wDesc', wmo[1]);
+    setHtml('wWind', wind); setHtml('wHumidity', hum);
+    lsSet('weather_data', { temp: temp, icon: wmo[0], desc: wmo[1], wind: wind, hum: hum });
+}
+
+function loadHolidaysForYear(yr) {
+    loadedHolidayYear = yr;
+    var staticJP = (typeof HOLIDAYS_JP !== 'undefined' && HOLIDAYS_JP[yr]) ? HOLIDAYS_JP[yr] : null;
+    var staticVN = (typeof HOLIDAYS_VN !== 'undefined' && HOLIDAYS_VN[yr]) ? HOLIDAYS_VN[yr] : null;
+    rawHolidaysJP = staticJP || lsGet('holiday_raw_jp_' + yr) || {};
+    rawHolidaysVN = staticVN || lsGet('holiday_raw_vn_' + yr) || [];
+    rebuildAndRender();
+    if (staticJP && staticVN) return; // static data covers this year — no API needed
+    if (!IS_ONLINE || MANUAL_OFFLINE) return;
+    if (!cachedJP) {
+        var x1 = new XMLHttpRequest();
+        x1.open('GET', 'http://holidays-jp.github.io/api/v1/' + yr + '/date.json', true); x1.timeout = 10000;
+        x1.onreadystatechange = function() {
+            if (x1.readyState !== 4) return;
+            if (x1.status === 200) { try { var d = JSON.parse(x1.responseText); rawHolidaysJP = d; lsSet('holiday_raw_jp_' + yr, d); if (yr === calYear) rebuildAndRender(); } catch(e) {} }
+        };
+        x1.onerror = x1.ontimeout = function() {};
+        x1.send();
+    }
+    if (!cachedVN) {
+        var x2 = new XMLHttpRequest();
+        x2.open('GET', 'http://date.nager.at/api/v3/PublicHolidays/' + yr + '/VN', true); x2.timeout = 10000;
+        x2.onreadystatechange = function() {
+            if (x2.readyState !== 4) return;
+            if (x2.status === 200) { try { var d2 = JSON.parse(x2.responseText); rawHolidaysVN = d2; lsSet('holiday_raw_vn_' + yr, d2); if (yr === calYear) rebuildAndRender(); } catch(e) {} }
+        };
+        x2.onerror = x2.ontimeout = function() {};
+        x2.send();
+    }
+}
+
+function rebuildHolidayDates() {
+    holidayDates = {};
+    var mo = calMonth + 1, yr = calYear, ds, p, d;
+    for (ds in rawHolidaysJP) {
+        p = ds.split('-');
+        if (parseInt(p[0],10) === yr && parseInt(p[1],10) === mo) { d = parseInt(p[2],10); holidayDates[d] = true; }
+    }
+}
+
+function renderHolidayListForMonth() {
+    var mo = calMonth + 1, yr = calYear, all = [], i, html = '', ds, p, d;
+    for (ds in rawHolidaysJP) {
+        p = ds.split('-');
+        if (parseInt(p[0],10) === yr && parseInt(p[1],10) === mo) { d = parseInt(p[2],10); all.push({ day: d, label: '🇯🇵 ' + mo + '/' + d + ' ' + rawHolidaysJP[ds] }); }
+    }
+    for (i = 0; i < rawHolidaysVN.length; i++) {
+        p = rawHolidaysVN[i].date.split('-');
+        if (parseInt(p[0],10) === yr && parseInt(p[1],10) === mo) { d = parseInt(p[2],10); all.push({ day: d, label: '🇻🇳 ' + mo + '/' + d + ' ' + rawHolidaysVN[i].localName }); }
+    }
+    all.sort(function(a,b){return a.day-b.day;});
+    for (i = 0; i < all.length; i++) html += '<div class="holiday-item">' + all[i].label + '</div>';
+    if (!html) html = '<div class="holiday-item">Không có ngày lễ</div>';
+    setHtml('holidayList', html); setHtml('bigHolidayList', html);
+}
+
+function rebuildAndRender() {
+    rebuildHolidayDates();
+    buildCal('calendar');
+    buildCal('bigCalendar');
+    renderHolidayListForMonth();
+}
+
+function buildCal(id) {
+    var yr=calYear, mo=calMonth, t=getJST(), today=(t.getFullYear()===yr&&t.getMonth()===mo)?t.getDate():-1, tbl=byId(id);
+    if (!tbl) return;
+    tbl.innerHTML = '';
+    var titleStr = yr+'年 '+(mo+1)+'月';
+    if (id==='calendar') setHtml('calTitle', titleStr);
+    if (id==='bigCalendar') setHtml('bigCalTitle', titleStr);
+    var thead=document.createElement('thead'), hrow=document.createElement('tr'), i;
+    for(i=0; i<7; i++) { var th=document.createElement('th'); th.innerHTML=WEEKDAYS[i]; hrow.appendChild(th); }
+    thead.appendChild(hrow); tbl.appendChild(thead);
+    var tbody=document.createElement('tbody'), fd=new Date(yr,mo,1).getDay(), tot=new Date(yr,mo+1,0).getDate(), row=document.createElement('tr'), d;
+    for(i=0; i<fd; i++) row.appendChild(document.createElement('td'));
+    for(d=1; d<=tot; d++){
+        if((fd+d-1)%7===0 && d!==1){ tbody.appendChild(row); row=document.createElement('tr'); }
+        var cell=document.createElement('td'), cls=[]; cell.innerHTML=d;
+        if(d===today) cls.push('today');
+        if(holidayDates[d]) cls.push('holiday');
+        if(cls.length) cell.className=cls.join(' ');
+        row.appendChild(cell);
+    }
+    tbody.appendChild(row); tbl.appendChild(tbody);
+}
+
+function calPrev() {
+    calMonth--;
+    if (calMonth < 0) { calMonth = 11; calYear--; }
+    if (calYear !== loadedHolidayYear) { loadHolidaysForYear(calYear); } else { rebuildAndRender(); }
+}
+
+function calNext() {
+    calMonth++;
+    if (calMonth > 11) { calMonth = 0; calYear++; }
+    if (calYear !== loadedHolidayYear) { loadHolidaysForYear(calYear); } else { rebuildAndRender(); }
+}
+
+function toggleHolidayList() {
+    holidayListVisible = !holidayListVisible;
+    var el = document.getElementById('holidayList');
+    var arrow = document.getElementById('holidayToggle');
+    if (el) el.style.display = holidayListVisible ? '' : 'none';
+    if (arrow) arrow.innerHTML = holidayListVisible ? '▲' : '▼';
+}
+
+function toggleBigHolidayList() {
+    bigHolidayListVisible = !bigHolidayListVisible;
+    var el = document.getElementById('bigHolidayList');
+    var arrow = document.getElementById('bigHolidayToggle');
+    if (el) el.style.display = bigHolidayListVisible ? '' : 'none';
+    if (arrow) arrow.innerHTML = bigHolidayListVisible ? '▲' : '▼';
+}
+
+/* ══════════════════════════════
+   STOPWATCH & COUNTDOWN & CALC & POMO
+   Giữ nguyên code chức năng
+══════════════════════════════ */
+var swRunning=false, swStart=0, swElapsed=0, swTimer=null, swLaps=[];
+function swToggle() {
+    if(!swRunning) { swStart=Date.now()-swElapsed; swTimer=setInterval(swTick,100); swRunning=true; byId('swStartBtn').innerHTML='STOP'; byId('swStartBtn').className='tbtn tbtn-main running'; }
+    else { clearInterval(swTimer); swElapsed=Date.now()-swStart; swRunning=false; byId('swStartBtn').innerHTML='START'; byId('swStartBtn').className='tbtn tbtn-main'; }
+}
+function swTick() { swElapsed=Date.now()-swStart; setHtml('swDisplay',swFmt(swElapsed)); }
+function swReset() { clearInterval(swTimer); swRunning=false; swElapsed=0; swLaps=[]; setHtml('swDisplay','00:00.0'); setHtml('lapList',''); byId('swStartBtn').innerHTML='START'; byId('swStartBtn').className='tbtn tbtn-main'; }
+function swLap() { if(!swRunning&&swElapsed===0) return; swLaps.push(swElapsed); renderLaps(); }
+function swFmt(ms) { var t=Math.floor(ms/100); return pad(Math.floor(t/600))+':'+pad(Math.floor(t/10)%60)+'.'+(t%10); }
+function renderLaps() {
+    var sp=[], mn, mx, html='', i, c;
+    for(i=0;i<swLaps.length;i++) sp.push(i===0?swLaps[i]:swLaps[i]-swLaps[i-1]);
+    mn=sp[0]; mx=sp[0];
+    for(i=1;i<sp.length;i++){ if(sp[i]<mn) mn=sp[i]; if(sp[i]>mx) mx=sp[i]; }
+    for(i=swLaps.length-1;i>=0;i--){
+        c=sp.length>1?(sp[i]===mn?' fastest':sp[i]===mx?' slowest':''):'';
+        html+='<div class="lap-item'+c+'"><span>Lap '+(i+1)+'</span><span>'+swFmt(sp[i])+'</span><span>'+swFmt(swLaps[i])+'</span></div>';
+    }
+    setHtml('lapList',html);
+}
+
+var cdRunning=false, cdTimer=null, cdMinutes=5, cdSeconds=0, cdRemain=0, cdEnd=0;
+function cdAdj(u,v) {
+    if(cdRunning) return;
+    if(u==='m') cdMinutes=Math.max(0,Math.min(99,cdMinutes+v)); else cdSeconds=Math.max(0,Math.min(50,cdSeconds+v));
+    setHtml('cdMin',pad(cdMinutes)); setHtml('cdSec',pad(cdSeconds));
+    cdRemain=(cdMinutes*60+cdSeconds)*1000; cdRefresh(); byId('cdAlert').innerHTML=''; byId('cdAlert').className='cd-alert';
+}
+function cdToggle() {
+    if(!cdRunning){
+        if(cdRemain<=0) cdRemain=(cdMinutes*60+cdSeconds)*1000; if(cdRemain<=0) return;
+        byId('cdAlert').innerHTML=''; byId('cdDisplay').className='cd-display'; cdEnd=Date.now()+cdRemain; cdTimer=setInterval(cdTick,250); cdRunning=true;
+        byId('cdStartBtn').innerHTML='PAUSE'; byId('cdStartBtn').className='tbtn tbtn-main running';
+    } else {
+        clearInterval(cdTimer); cdRemain=cdEnd-Date.now(); cdRunning=false; byId('cdStartBtn').innerHTML='START'; byId('cdStartBtn').className='tbtn tbtn-main';
+    }
+}
+function cdTick() {
+    cdRemain=cdEnd-Date.now();
+    if(cdRemain<=0){
+        cdRemain=0; clearInterval(cdTimer); cdRunning=false; setHtml('cdDisplay','00:00'); byId('cdDisplay').className='cd-display alert';
+        byId('cdStartBtn').innerHTML='START'; byId('cdStartBtn').className='tbtn tbtn-main'; byId('cdAlert').innerHTML='🔔 Hết giờ!'; byId('cdAlert').className='cd-alert show'; return;
+    }
+    cdRefresh();
+}
+function cdRefresh() { var t=Math.ceil(cdRemain/1000); setHtml('cdDisplay',pad(Math.floor(t/60))+':'+pad(t%60)); }
+function cdReset() {
+    clearInterval(cdTimer); cdRunning=false; cdRemain=(cdMinutes*60+cdSeconds)*1000; setHtml('cdDisplay',pad(cdMinutes)+':'+pad(cdSeconds));
+    byId('cdDisplay').className='cd-display'; byId('cdStartBtn').innerHTML='START'; byId('cdStartBtn').className='tbtn tbtn-main'; byId('cdAlert').innerHTML=''; byId('cdAlert').className='cd-alert';
+}
+
+var cCur='0', cPrev='', cOp='', cNew=true, cRes=false;
+function calcDisp() { var el=byId('calcNum'); el.innerHTML=cCur; var l=cCur.replace('-','').length; el.className='calc-num'+(l>9?' xsmall':l>6?' small':''); }
+function calcNum(v) {
+    if(cRes&&v!=='.'){cCur='0';cRes=false;}
+    if(v==='.'){ if(cNew){cCur='0.';cNew=false;calcDisp();return;} if(cCur.indexOf('.')!==-1) return; cCur+='.'; calcDisp(); return; }
+    if(cNew){cCur=v;cNew=false;}else{cCur=(cCur==='0')?v:cCur+v;}
+    if(cCur.replace('-','').length>12) return; calcDisp();
+}
+function calcOp(op) {
+    if(cOp&&!cNew) calcEqual(true); cPrev=cCur; cOp=op; cNew=true; cRes=false;
+    var ids={'÷':'op-div','×':'op-mul','−':'op-sub','+':'op-add'}, ops=qsa('.cb-op'), i;
+    for(i=0;i<ops.length;i++) ops[i].className='cb cb-op'; if(ids[op]) byId(ids[op]).className='cb cb-op active';
+    setHtml('calcExpr',cPrev+' '+op);
+}
+function calcEqual(chain) {
+    if(!cOp) return; var a=parseFloat(cPrev), b=parseFloat(cCur), r, ops, i;
+    if(cOp==='÷') r=(b!==0)?a/b:'Error'; if(cOp==='×') r=a*b; if(cOp==='−') r=a-b; if(cOp==='+') r=a+b;
+    if(!chain){ setHtml('calcExpr',cPrev+' '+cOp+' '+cCur+' ='); cOp=''; ops=qsa('.cb-op'); for(i=0;i<ops.length;i++) ops[i].className='cb cb-op'; }
+    cCur=r==='Error'?'Error':(function(){var s=parseFloat(r.toFixed(10)).toString();return s.length>12?parseFloat(r.toPrecision(8)).toString():s;})();
+    cPrev=cCur; cNew=true; cRes=!chain; calcDisp();
+}
+function calcFn(fn) {
+    var n=parseFloat(cCur), ops, i;
+    if(fn==='AC'){ cCur='0';cPrev='';cOp='';cNew=true;cRes=false;setHtml('calcExpr',''); ops=qsa('.cb-op'); for(i=0;i<ops.length;i++) ops[i].className='cb cb-op'; }
+    if(fn==='+/-'){cCur=(n*-1).toString();cRes=false;} if(fn==='%'){cCur=(n/100).toString();cRes=false;} calcDisp();
+}
+
+var PS={work:25,short:5,long:15}, PL={work:'Focus',short:'Short Break',long:'Long Break'};
+var pMode='work', pRun=false, pTimer=null, pRemain=0, pTotal=0, pEnd=0, pCount=0, PC=2*Math.PI*88;
+function pomoSetMode(m) {
+    if(pRun) return; pMode=m; pTotal=PS[m]*60*1000; pRemain=pTotal;
+    var mmap={'work':'modeWork','short':'modeShort','long':'modeLong'}, mbtns=qsa('.pomo-mode-btn'), i;
+    for(i=0;i<mbtns.length;i++) mbtns[i].className='pomo-mode-btn';
+    byId(mmap[m]).className='pomo-mode-btn active'; byId('pomoRingFg').className='pomo-ring-fg'+(m==='work'?'':' break');
+    setHtml('pomoLabel',PL[m]); pomoRefresh();
+}
+function pomoToggle() {
+    if(!pRun){ pEnd=Date.now()+pRemain; pTimer=setInterval(pomoTick,500); pRun=true; byId('pomoStartBtn').innerHTML='PAUSE'; byId('pomoStartBtn').className='pomo-btn pomo-start running'; }
+    else{ clearInterval(pTimer); pRemain=pEnd-Date.now(); pRun=false; byId('pomoStartBtn').innerHTML='START'; byId('pomoStartBtn').className='pomo-btn pomo-start'; }
+}
+function pomoTick() {
+    pRemain=pEnd-Date.now();
+    if(pRemain<=0){ pRemain=0; clearInterval(pTimer); pRun=false; byId('pomoStartBtn').innerHTML='START'; byId('pomoStartBtn').className='pomo-btn pomo-start'; pomoRefresh(); pomoDone(); return; }
+    pomoRefresh();
+}
+function pomoRefresh() {
+    var t=Math.ceil(pRemain/1000), fg=byId('pomoRingFg'), pct=pTotal>0?pRemain/pTotal:0;
+    setHtml('pomoTime',pad(Math.floor(t/60))+':'+pad(t%60)); fg.style.strokeDasharray=PC; fg.style.strokeDashoffset=PC*(1-pct);
+}
+function pomoReset() { clearInterval(pTimer); pRun=false; pRemain=PS[pMode]*60*1000; pTotal=pRemain; byId('pomoStartBtn').innerHTML='START'; byId('pomoStartBtn').className='pomo-btn pomo-start'; pomoRefresh(); }
+function pomoAdjSet(m,v) {
+    if(pRun) return; PS[m]=Math.max(1,Math.min(60,PS[m]+v));
+    var vmap={'work':'setWork','short':'setShort','long':'setLong'}; setHtml(vmap[m],PS[m]);
+    if(m===pMode){ pTotal=PS[m]*60*1000; pRemain=pTotal; pomoRefresh(); }
+}
+function pomoDone() {
+    var now=getJST(), time=pad(now.getHours())+':'+pad(now.getMinutes()), icon=pMode==='work'?'🍅':pMode==='short'?'☕':'🛋️', log=byId('pomoLog'), empty=log.querySelector('.pomo-log-empty');
+    if(empty) empty.parentNode.removeChild(empty);
+    log.innerHTML='<div class="pomo-log-item"><span>'+icon+' '+PL[pMode]+'</span><span>'+time+'</span></div>'+log.innerHTML;
+    if(pMode==='work'){ pCount++; setHtml('pomoCount',pCount); pomoSetMode(pCount%4===0?'long':'short'); } else pomoSetMode('work');
+}
+
+/* ══════════════════════════════
+   INIT
+══════════════════════════════ */
+function init() {
+    checkCacheVersion();
+    initAppCache();
+    applyScreenPreset(lsGet(SCREEN_PRESET_KEY) || 'paperwhite');
+
+    if (typeof navigator.onLine !== 'undefined') IS_ONLINE = navigator.onLine;
+    updateStatusBar();
+
+    var nowCal = getJST(); calYear = nowCal.getFullYear(); calMonth = nowCal.getMonth();
+
+    cdRemain = (cdMinutes * 60 + cdSeconds) * 1000;
+    updateClock();
+    showQuote();
+
+    loadFX();
+    loadWeather();
+    loadHolidaysForYear(calYear);
+    pomoRefresh();
+
+    setInterval(updateClock, 1000);
+    startNetworkIntervals();
+
+    if (window.addEventListener) {
+        window.addEventListener('online', function() {
+            if (MANUAL_OFFLINE) return;
+            IS_ONLINE = true; updateStatusBar();
+            loadFX(); loadWeather(); loadHolidaysForYear(calYear);
+            if (window.applicationCache) { try { window.applicationCache.update(); } catch(e) {} }
+        });
+        window.addEventListener('offline', function() {
+            if (MANUAL_OFFLINE) return;
+            IS_ONLINE = false; updateStatusBar();
+        });
+    }
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else init();

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ja" manifest="offline.appcache">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Kindle Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="quotes.js"></script>
+</head>
+<body>
+
+<div class="tabs">
+    <button class="tab-btn"        onclick="switchTab(0)">📊 Info</button>
+    <button class="tab-btn active" onclick="switchTab(1)">🕐 Clock</button>
+    <button class="tab-btn"        onclick="switchTab(2)">⏱️ Timer</button>
+    <button class="tab-btn"        onclick="switchTab(3)">🔢 Calc</button>
+    <button class="tab-btn"        onclick="switchTab(4)">🍅 Pomo</button>
+</div>
+
+<!-- Nút chuyển đổi Online/Offline -->
+<div id="statusWrap">
+    <div id="onlineStatus" class="status-online">🟢 Online</div>
+    <label class="screen-preset-label" for="screenPreset">Màn hình</label>
+    <select id="screenPreset" onchange="changeScreenPreset(this.value)">
+        <option value="kindle8">Kindle 8</option>
+        <option value="paperwhite">Kindle Paperwhite</option>
+        <option value="fhd">Full HD</option>
+        <option value="2k">2K</option>
+        <option value="4k">4K</option>
+    </select>
+    <button id="toggleNetBtn" onclick="toggleNetworkMode()">Chuyển Offline</button>
+</div>
+
+<!-- ══════════ TAB 1: INFO ══════════ -->
+<div id="tab1" class="tab-content">
+    <div class="clock">
+        <div id="time">00:00:00</div>
+        <div id="date">----年--月--日（-）</div>
+    </div>
+    <div class="fx-rate">
+        <div>
+            <div class="fx-label">💱 1 JPY → VND</div>
+            <div class="fx-time" id="fxtime"></div>
+        </div>
+        <div class="fx-val" id="fxrate">--- VND</div>
+    </div>
+    <div class="weather">
+        <div class="weather-header">⛅ Tokyo – Thời tiết hiện tại</div>
+        <div class="weather-row">
+            <div class="weather-left">
+                <div class="weather-temp" id="wTemp">--°C</div>
+                <div class="weather-icon" id="wIcon">⛅</div>
+            </div>
+            <div class="weather-meta">
+                <div id="wDesc">Đang tải...</div>
+                <div>💧 <b id="wHumidity">--%</b></div>
+                <div>💨 <b id="wWind">-- km/h</b></div>
+            </div>
+        </div>
+    </div>
+    <div class="cal-wrap">
+        <div class="cal-nav">
+            <button class="cal-nav-btn" onclick="calPrev()">◀</button>
+            <div class="cal-title" id="calTitle">----年 --月</div>
+            <button class="cal-nav-btn" onclick="calNext()">▶</button>
+        </div>
+        <table id="calendar"></table>
+    </div>
+    <div class="holidays">
+        <div class="holidays-title" onclick="toggleHolidayList()">🎌 Ngày lễ tháng này <span id="holidayToggle">▲</span></div>
+        <div id="holidayList">Đang tải...</div>
+    </div>
+    <div class="quote">
+        <div class="quote-text"   id="quoteText"></div>
+        <div class="quote-author" id="quoteAuthor"></div>
+    </div>
+    <div class="footer">Kindle Dashboard · Saitama · <span id="footerTime"></span></div>
+</div>
+
+<!-- ══════════ TAB 2: BIG CLOCK ══════════ -->
+<div id="tab2" class="tab-content active">
+    <div class="bigclock-wrap">
+        <div id="bigTime">00:00</div>
+        <div id="bigDate">----年--月--日（-）</div>
+        <div class="big-holidays-wrap">
+            <div class="big-holidays-hdr" onclick="toggleBigHolidayList()">🎌 Ngày lễ <span id="bigHolidayToggle">▲</span></div>
+            <div class="big-holidays" id="bigHolidayList"></div>
+        </div>
+        <div class="bigcal">
+            <div class="bigcal-nav">
+                <button class="bigcal-nav-btn" onclick="calPrev()">◀</button>
+                <div class="bigcal-title" id="bigCalTitle"></div>
+                <button class="bigcal-nav-btn" onclick="calNext()">▶</button>
+            </div>
+            <table id="bigCalendar"></table>
+        </div>
+        <div class="big-quote">
+            <div class="big-quote-text"   id="bigQuoteText"></div>
+            <div class="big-quote-author" id="bigQuoteAuthor"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════ TAB 3: TIMER ══════════ -->
+<div id="tab3" class="tab-content">
+    <div class="timer-wrap">
+        <div class="timer-block">
+            <div class="timer-label">⏱️ Stopwatch</div>
+            <div class="sw-display" id="swDisplay">00:00.0</div>
+            <div class="timer-btns">
+                <button class="tbtn tbtn-main" id="swStartBtn" onclick="swToggle()">START</button>
+                <button class="tbtn tbtn-sub"  onclick="swReset()">RESET</button>
+                <button class="tbtn tbtn-sub"  onclick="swLap()">LAP</button>
+            </div>
+            <div class="lap-list" id="lapList"></div>
+        </div>
+        <div class="timer-divider"></div>
+        <div class="timer-block">
+            <div class="timer-label">⏳ Countdown</div>
+            <div class="cd-display" id="cdDisplay">05:00</div>
+            <div class="cd-inputs">
+                <div class="cd-input-group">
+                    <button class="cd-adj" onclick="cdAdj('m', 1)">＋</button>
+                    <div class="cd-val" id="cdMin">05</div>
+                    <div class="cd-unit">分</div>
+                    <button class="cd-adj" onclick="cdAdj('m', -1)">－</button>
+                </div>
+                <div class="cd-sep">:</div>
+                <div class="cd-input-group">
+                    <button class="cd-adj" onclick="cdAdj('s', 10)">＋</button>
+                    <div class="cd-val" id="cdSec">00</div>
+                    <div class="cd-unit">秒</div>
+                    <button class="cd-adj" onclick="cdAdj('s', -10)">－</button>
+                </div>
+            </div>
+            <div class="timer-btns">
+                <button class="tbtn tbtn-main" id="cdStartBtn" onclick="cdToggle()">START</button>
+                <button class="tbtn tbtn-sub"  onclick="cdReset()">RESET</button>
+            </div>
+            <div id="cdAlert" class="cd-alert"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════ TAB 4: CALCULATOR ══════════ -->
+<div id="tab4" class="tab-content">
+    <div class="calc-wrap">
+        <div class="calc">
+            <div class="calc-display">
+                <div class="calc-expr" id="calcExpr"></div>
+                <div class="calc-num"  id="calcNum">0</div>
+            </div>
+            <table class="calc-grid" cellspacing="0" cellpadding="0">
+                <tr class="calc-row">
+                    <td class="cb cb-fn"  onclick="calcFn('AC')">AC</td>
+                    <td class="cb cb-fn"  onclick="calcFn('+/-')">+/-</td>
+                    <td class="cb cb-fn"  onclick="calcFn('%')">%</td>
+                    <td class="cb cb-op"  id="op-div" onclick="calcOp('÷')">÷</td>
+                </tr>
+                <tr class="calc-row">
+                    <td class="cb cb-num" onclick="calcNum('7')">7</td>
+                    <td class="cb cb-num" onclick="calcNum('8')">8</td>
+                    <td class="cb cb-num" onclick="calcNum('9')">9</td>
+                    <td class="cb cb-op"  id="op-mul" onclick="calcOp('×')">×</td>
+                </tr>
+                <tr class="calc-row">
+                    <td class="cb cb-num" onclick="calcNum('4')">4</td>
+                    <td class="cb cb-num" onclick="calcNum('5')">5</td>
+                    <td class="cb cb-num" onclick="calcNum('6')">6</td>
+                    <td class="cb cb-op"  id="op-sub" onclick="calcOp('−')">−</td>
+                </tr>
+                <tr class="calc-row">
+                    <td class="cb cb-num" onclick="calcNum('1')">1</td>
+                    <td class="cb cb-num" onclick="calcNum('2')">2</td>
+                    <td class="cb cb-num" onclick="calcNum('3')">3</td>
+                    <td class="cb cb-op"  id="op-add" onclick="calcOp('+')">+</td>
+                </tr>
+                <tr class="calc-row">
+                    <td class="cb cb-num cb-zero" colspan="2" onclick="calcNum('0')">0</td>
+                    <td class="cb cb-num" onclick="calcNum('.')">.</td>
+                    <td class="cb cb-op"  onclick="calcEqual()">=</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════ TAB 5: POMODORO ══════════ -->
+<div id="tab5" class="tab-content">
+    <div class="pomo-wrap">
+        <div class="pomo-modes">
+            <button class="pomo-mode-btn active" id="modeWork"  onclick="pomoSetMode('work')">🍅 Focus</button>
+            <button class="pomo-mode-btn"        id="modeShort" onclick="pomoSetMode('short')">☕ Short</button>
+            <button class="pomo-mode-btn"        id="modeLong"  onclick="pomoSetMode('long')">🛋️ Long</button>
+        </div>
+        <div class="pomo-ring-wrap">
+            <svg class="pomo-ring" viewBox="0 0 200 200">
+                <circle class="pomo-ring-bg" cx="100" cy="100" r="88"/>
+                <circle class="pomo-ring-fg" id="pomoRingFg"
+                    cx="100" cy="100" r="88"
+                    stroke-dasharray="553"
+                    stroke-dashoffset="0"/>
+            </svg>
+            <div class="pomo-ring-inner">
+                <div class="pomo-time"  id="pomoTime">25:00</div>
+                <div class="pomo-label" id="pomoLabel">Focus</div>
+                <div class="pomo-count">🍅×<span id="pomoCount">0</span></div>
+            </div>
+        </div>
+        <div class="pomo-btns">
+            <button class="pomo-btn pomo-start" id="pomoStartBtn" onclick="pomoToggle()">START</button>
+            <button class="pomo-btn pomo-reset"                   onclick="pomoReset()">RESET</button>
+        </div>
+        <div class="pomo-settings">
+            <div class="pomo-set-row">
+                <span>🍅 Focus</span>
+                <button onclick="pomoAdjSet('work', -1)">－</button>
+                <span class="pomo-set-val" id="setWork">25</span>分
+                <button onclick="pomoAdjSet('work', 1)">＋</button>
+            </div>
+            <div class="pomo-set-row">
+                <span>☕ Short Break</span>
+                <button onclick="pomoAdjSet('short', -1)">－</button>
+                <span class="pomo-set-val" id="setShort">5</span>分
+                <button onclick="pomoAdjSet('short', 1)">＋</button>
+            </div>
+            <div class="pomo-set-row">
+                <span>🛋️ Long Break</span>
+                <button onclick="pomoAdjSet('long', -1)">－</button>
+                <span class="pomo-set-val" id="setLong">15</span>分
+                <button onclick="pomoAdjSet('long', 1)">＋</button>
+            </div>
+        </div>
+        <div class="pomo-log" id="pomoLog">
+            <div class="pomo-log-empty">Chưa có session nào</div>
+        </div>
+    </div>
+</div>
+
+<script src="holidays.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
